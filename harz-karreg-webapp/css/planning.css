@@ -1,0 +1,148 @@
+.planning-shell {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.driver-rail,
+.week-board {
+  min-height: 620px;
+}
+
+.driver-rail {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.driver-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.driver-chip strong {
+  display: block;
+}
+
+.driver-chip span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.week-board {
+  overflow: auto;
+  padding: 14px;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(172px, 1fr));
+  gap: 10px;
+  min-width: 1220px;
+}
+
+.day-column {
+  display: flex;
+  min-height: 580px;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  transition: border var(--transition), background var(--transition);
+}
+
+.day-column.drag-over {
+  border-color: rgba(214, 255, 63, 0.7);
+  background: rgba(214, 255, 63, 0.06);
+}
+
+.day-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0 8px;
+  background: rgba(17, 23, 32, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.day-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 820;
+}
+
+.day-date {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.route-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(214, 255, 63, 0.24);
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(214, 255, 63, 0.13), rgba(255, 255, 255, 0.055));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  transition: transform var(--transition), opacity var(--transition), border var(--transition);
+}
+
+.route-card:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.route-card.dragging {
+  opacity: 0.55;
+}
+
+.route-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.route-meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.empty-day {
+  display: grid;
+  min-height: 90px;
+  place-items: center;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  color: var(--muted-2);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1120px) {
+  .planning-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .driver-rail {
+    min-height: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .driver-rail {
+    grid-template-columns: 1fr;
+  }
+}
