@@ -234,8 +234,32 @@
 .week-board {
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 14px;
+  padding: 14px 14px 28px;
   max-width: 100%;
+  scrollbar-color: rgba(143, 154, 170, 0.34) transparent;
+  scrollbar-width: thin;
+}
+
+.week-board::-webkit-scrollbar {
+  height: 10px;
+}
+
+.week-board::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.week-board::-webkit-scrollbar-thumb {
+  min-width: 56px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(143, 154, 170, 0.34);
+  background-clip: padding-box;
+}
+
+.week-board::-webkit-scrollbar-thumb:hover {
+  background: rgba(214, 255, 63, 0.72);
+  background-clip: padding-box;
 }
 
 .week-grid {
