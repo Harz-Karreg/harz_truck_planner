@@ -71,13 +71,17 @@
 
 .nav-icon {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 10px;
+  height: 10px;
   place-items: center;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--accent);
-  font-size: 0.86rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.035);
+}
+
+.nav-link.active .nav-icon {
+  background: var(--accent);
+  box-shadow: 0 0 0 5px rgba(214, 255, 63, 0.12);
 }
 
 .side-panel {

@@ -1,14 +1,21 @@
 (function () {
   const nav = [
-    { page: "planning", label: "Dashboard", href: "index.html", icon: "D" },
-    { page: "planning", label: "Planning", href: "planning.html", icon: "P" },
-    { page: "conducteurs", label: "Conducteurs", href: "conducteurs.html", icon: "C" },
-    { page: "remorques", label: "Remorques", href: "remorques.html", icon: "R" },
-    { page: "tournees", label: "Tournées", href: "tournees.html", icon: "T" },
-    { page: "settings", label: "Paramètres", href: "#", icon: "S" }
+    { page: "dashboard", label: "Dashboard", href: "index.html" },
+    { page: "planning", label: "Planning", href: "planning.html" },
+    { page: "conducteurs", label: "Conducteurs", href: "conducteurs.html" },
+    { page: "camions", label: "Camions", href: "camions.html" },
+    { page: "bennes", label: "Bennes", href: "bennes.html" },
+    { page: "remorques", label: "Remorques", href: "remorques.html" },
+    { page: "tournees", label: "Tournées", href: "tournees.html" },
+    { page: "settings", label: "Paramètres", href: "#" }
   ];
 
   const pageCopy = {
+    dashboard: {
+      eyebrow: "Vue executive",
+      title: "Dashboard",
+      subtitle: "Indicateurs clés de l'activité transport locale: chauffeurs, camions, bennes, remorques et tournées."
+    },
     planning: {
       eyebrow: "Operations hebdomadaires",
       title: "Planning transport",
@@ -17,7 +24,17 @@
     conducteurs: {
       eyebrow: "Capital humain",
       title: "Conducteurs",
-      subtitle: "Suivi des disponibilités, permis, contacts et scores d'eco-conduite."
+      subtitle: "Suivi des disponibilités, permis, contacts et états opérationnels."
+    },
+    camions: {
+      eyebrow: "Parc moteur",
+      title: "Camions",
+      subtitle: "Gestion des tracteurs avec marque, modèle et immatriculation."
+    },
+    bennes: {
+      eyebrow: "Materiel vrac",
+      title: "Bennes",
+      subtitle: "Gestion des bennes par nom et capacité petite, moyenne ou grande."
     },
     remorques: {
       eyebrow: "Capacite flotte",
@@ -61,13 +78,15 @@
       "En mission": "info",
       "En repos": "warning",
       Maintenance: "warning",
+      Petite: "info",
+      Moyenne: "warning",
+      Grande: "success",
       Planifiee: "info",
       "En cours": "warning",
       Terminee: "success",
       Annulee: "danger"
     };
-    const node = el("span", `badge ${variants[value] || ""}`.trim(), value);
-    return node;
+    return el("span", `badge ${variants[value] || ""}`.trim(), value);
   }
 
   function routeStatusLabel(value) {
@@ -106,7 +125,7 @@
           <nav class="nav" aria-label="Navigation principale">
             ${nav.map((item) => `
               <a class="nav-link ${item.href === currentFile || (currentFile === "" && item.href === "index.html") ? "active" : ""}" href="${item.href}">
-                <span class="nav-icon">${item.icon}</span>
+                <span class="nav-icon" aria-hidden="true"></span>
                 <span>${item.label}</span>
               </a>`).join("")}
           </nav>
@@ -133,6 +152,8 @@
 
   function renderStats(target) {
     const drivers = window.HKStorage.load("conducteurs");
+    const trucks = window.HKStorage.load("camions");
+    const bins = window.HKStorage.load("bennes");
     const trailers = window.HKStorage.load("remorques");
     const routes = window.HKStorage.load("tournees");
     target.innerHTML = `
@@ -143,19 +164,19 @@
           <p class="stat-meta">${drivers.filter((item) => item.statut === "Disponible").length} disponibles</p>
         </article>
         <article class="card stat-card">
+          <p class="stat-label">Camions</p>
+          <p class="stat-value">${trucks.length}</p>
+          <p class="stat-meta">${bins.length} bennes référencées</p>
+        </article>
+        <article class="card stat-card">
           <p class="stat-label">Remorques</p>
           <p class="stat-value">${trailers.length}</p>
-          <p class="stat-meta">${trailers.filter((item) => item.statut === "Disponible").length} pretes</p>
+          <p class="stat-meta">${trailers.filter((item) => item.statut === "Disponible").length} prêtes</p>
         </article>
         <article class="card stat-card">
           <p class="stat-label">Tournées</p>
           <p class="stat-value">${routes.length}</p>
           <p class="stat-meta">${routes.filter((item) => item.statut === "En cours").length} en cours</p>
-        </article>
-        <article class="card stat-card">
-          <p class="stat-label">Eco score moyen</p>
-          <p class="stat-value">${Math.round(drivers.reduce((sum, item) => sum + Number(item.ecoScore || 0), 0) / Math.max(drivers.length, 1))}</p>
-          <p class="stat-meta">Sur base conducteurs actifs</p>
         </article>
       </div>
     `;

@@ -2,8 +2,11 @@
   const namespace = "harz-karreg";
   const keys = {
     conducteurs: `${namespace}:conducteurs`,
+    camions: `${namespace}:camions`,
+    bennes: `${namespace}:bennes`,
     remorques: `${namespace}:remorques`,
-    tournees: `${namespace}:tournees`
+    tournees: `${namespace}:tournees`,
+    disponibilites: `${namespace}:disponibilites`
   };
 
   function weekDate(offset) {
@@ -24,8 +27,7 @@
         permis: "CE",
         validite: "2028-10-14",
         statut: "Disponible",
-        photo: "",
-        ecoScore: 94
+        photo: ""
       },
       {
         id: "drv-sarah",
@@ -35,8 +37,7 @@
         permis: "CE",
         validite: "2027-05-03",
         statut: "En mission",
-        photo: "",
-        ecoScore: 88
+        photo: ""
       },
       {
         id: "drv-noah",
@@ -46,8 +47,33 @@
         permis: "C",
         validite: "2029-02-21",
         statut: "En repos",
-        photo: "",
-        ecoScore: 91
+        photo: ""
+      }
+    ],
+    camions: [
+      {
+        id: "trk-renault-t-01",
+        marque: "Renault Trucks",
+        modele: "T High",
+        immatriculation: "HK-310-TR"
+      },
+      {
+        id: "trk-scania-r-02",
+        marque: "Scania",
+        modele: "R 500",
+        immatriculation: "HK-512-SC"
+      }
+    ],
+    bennes: [
+      {
+        id: "bin-btp-01",
+        nom: "Benne BTP Nord",
+        statut: "Grande"
+      },
+      {
+        id: "bin-ville-02",
+        nom: "Benne urbaine",
+        statut: "Petite"
       }
     ],
     remorques: [
@@ -86,6 +112,8 @@
         heure: "07:30",
         conducteurId: "drv-amine",
         remorqueId: "trl-benne-42",
+        camionId: "trk-renault-t-01",
+        benneId: "bin-btp-01",
         description: "Materiaux BTP pour chantier nord.",
         statut: "Planifiee"
       },
@@ -98,6 +126,8 @@
         heure: "05:45",
         conducteurId: "drv-sarah",
         remorqueId: "trl-frigo-18",
+        camionId: "trk-scania-r-02",
+        benneId: "",
         description: "Livraison alimentaire sous temperature dirigee.",
         statut: "En cours"
       },
@@ -110,10 +140,13 @@
         heure: "10:15",
         conducteurId: "drv-noah",
         remorqueId: "trl-plateau-77",
+        camionId: "trk-renault-t-01",
+        benneId: "bin-ville-02",
         description: "Materiel industriel.",
         statut: "Planifiee"
       }
-    ]
+    ],
+    disponibilites: []
   };
 
   function uid(prefix) {

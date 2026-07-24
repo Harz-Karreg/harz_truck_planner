@@ -26,7 +26,7 @@
         <div class="field${full}">
           <label>${field.label}</label>
           <select class="select" name="${field.name}" ${required}>
-            ${(field.options || []).map((option) => `<option value="${option.value}" ${String(option.value) === String(value) ? "selected" : ""}>${option.label}</option>`).join("")}
+            ${(field.options || []).map((option) => `<option value="${option.value}" ${String(option.value) === String(value) ? "selected" : ""} ${option.disabled ? "disabled" : ""}>${option.label}</option>`).join("")}
           </select>
         </div>`;
     }

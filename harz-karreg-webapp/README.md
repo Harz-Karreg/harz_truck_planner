@@ -17,6 +17,8 @@ harz-karreg-webapp/
   index.html
   planning.html
   conducteurs.html
+  camions.html
+  bennes.html
   remorques.html
   tournees.html
   css/
@@ -29,8 +31,11 @@ harz-karreg-webapp/
   js/
     app.js
     storage.js
+    dashboard.js
     planning.js
     conducteurs.js
+    camions.js
+    bennes.js
     remorques.js
     tournees.js
     calendar.js

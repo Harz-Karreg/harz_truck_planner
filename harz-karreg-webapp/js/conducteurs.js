@@ -9,8 +9,7 @@
       { name: "permis", label: "Permis", value: driver.permis || "CE", required: true },
       { name: "validite", label: "Date de validité", type: "date", value: driver.validite, required: true },
       { name: "statut", label: "Statut", type: "select", value: driver.statut || "Disponible", options: statusOptions },
-      { name: "photo", label: "Photo URL", value: driver.photo },
-      { name: "ecoScore", label: "Eco Score", type: "number", value: driver.ecoScore || 80, required: true }
+      { name: "photo", label: "Photo URL", value: driver.photo }
     ];
   }
 
@@ -19,11 +18,10 @@
       title: driver ? "Modifier le conducteur" : "Ajouter un conducteur",
       fields: fields(driver),
       onSubmit(data) {
-        const payload = { ...data, ecoScore: Number(data.ecoScore || 0) };
         if (driver) {
-          window.HKStorage.update("conducteurs", driver.id, payload);
+          window.HKStorage.update("conducteurs", driver.id, data);
         } else {
-          window.HKStorage.save("conducteurs", payload);
+          window.HKStorage.save("conducteurs", data);
         }
         window.HKUI.notify("Conducteur enregistré.");
         render();
@@ -58,7 +56,6 @@
               <th>Permis</th>
               <th>Validité</th>
               <th>Statut</th>
-              <th>Eco Score</th>
               <th></th>
             </tr>
           </thead>
@@ -75,7 +72,6 @@
                 <td>${driver.permis}</td>
                 <td>${driver.validite}</td>
                 <td><span class="badge">${driver.statut}</span></td>
-                <td>${driver.ecoScore}/100</td>
                 <td class="actions">
                   <button class="icon-button" data-edit="${driver.id}" aria-label="Modifier">✎</button>
                   <button class="icon-button" data-delete="${driver.id}" aria-label="Supprimer">×</button>
