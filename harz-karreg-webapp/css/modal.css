@@ -1,0 +1,129 @@
+.modal-root,
+.toast-root {
+  position: fixed;
+  z-index: 100;
+}
+
+.modal-root {
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.modal-root.open {
+  display: flex;
+  animation: fadeIn var(--transition);
+}
+
+.modal {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #101720;
+  box-shadow: var(--shadow);
+  animation: slideUp var(--transition);
+}
+
+.modal-header,
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+.field label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.checkbox-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--line);
+}
+
+.toast-root {
+  right: 22px;
+  bottom: 22px;
+  display: grid;
+  gap: 10px;
+}
+
+.toast {
+  min-width: 260px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(18, 24, 33, 0.96);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  animation: slideUp var(--transition);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .modal-body {
+    grid-template-columns: 1fr;
+  }
+}
