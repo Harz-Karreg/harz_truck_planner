@@ -1,4 +1,15 @@
 (function () {
+  const icons = {
+    dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>',
+    planning: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v3M18 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg>',
+    conducteurs: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>',
+    camions: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+    bennes: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16l-2 10H6L4 7ZM8 7V4h8v3"/><circle cx="8" cy="19" r="1.5"/><circle cx="16" cy="19" r="1.5"/></svg>',
+    remorques: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h17v11H3zM20 14h2M6 17v2M17 17v2"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>',
+    tournees: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M7.5 16.5 16.5 7.5M7 6h5M12 6l-2-2M12 6l-2 2"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1A7 7 0 0 0 14.8 6L14.5 3h-5L9.2 6a7 7 0 0 0-1.7 1.1l-2.4-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1A7 7 0 0 0 9.2 18l.3 3h5l.3-3a7 7 0 0 0 1.7-1.1l2.4 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"/></svg>'
+  };
+
   const nav = [
     { page: "dashboard", label: "Dashboard", href: "index.html" },
     { page: "planning", label: "Planning", href: "planning.html" },
@@ -109,24 +120,58 @@
     setTimeout(() => toast.remove(), 2800);
   }
 
+  function sidebarCollapsed() {
+    try {
+      return localStorage.getItem("hk-sidebar-collapsed") === "true";
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function initSidebar() {
+    const layout = document.querySelector(".app-layout");
+    const toggle = document.querySelector("#sidebar-toggle");
+    if (!layout || !toggle) return;
+
+    function applyState(collapsed) {
+      layout.classList.toggle("sidebar-collapsed", collapsed);
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.setAttribute("aria-label", collapsed ? "Déployer la navigation" : "Rétracter la navigation");
+      toggle.title = collapsed ? "Déployer la navigation" : "Rétracter la navigation";
+      try {
+        localStorage.setItem("hk-sidebar-collapsed", String(collapsed));
+      } catch (_error) {
+        // La navigation reste fonctionnelle si le stockage local est indisponible.
+      }
+    }
+
+    toggle.addEventListener("click", () => {
+      applyState(!layout.classList.contains("sidebar-collapsed"));
+    });
+  }
+
   function shell(page) {
     const copy = pageCopy[page] || pageCopy.planning;
     const currentFile = location.pathname.split("/").pop() || "index.html";
+    const collapsed = sidebarCollapsed();
     return `
-      <div class="app-layout">
+      <div class="app-layout${collapsed ? " sidebar-collapsed" : ""}">
         <aside class="sidebar">
           <a class="brand" href="index.html" aria-label="Harz Karreg">
             <span class="brand-mark">HK</span>
-            <span>
+            <span class="brand-copy">
               <strong class="brand-title">Harz Karreg</strong>
               <span class="brand-subtitle">Local fleet intelligence</span>
             </span>
           </a>
+          <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-expanded="${String(!collapsed)}" aria-label="${collapsed ? "Déployer la navigation" : "Rétracter la navigation"}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg>
+          </button>
           <nav class="nav" aria-label="Navigation principale">
             ${nav.map((item) => `
-              <a class="nav-link ${item.href === currentFile || (currentFile === "" && item.href === "index.html") ? "active" : ""}" href="${item.href}">
-                <span class="nav-icon" aria-hidden="true"></span>
-                <span>${item.label}</span>
+              <a class="nav-link ${item.href === currentFile || (currentFile === "" && item.href === "index.html") ? "active" : ""}" href="${item.href}" title="${item.label}">
+                <span class="nav-icon" aria-hidden="true">${icons[item.page]}</span>
+                <span class="nav-label">${item.label}</span>
               </a>`).join("")}
           </nav>
           <div class="side-panel">
@@ -186,5 +231,5 @@
     document.querySelector("#page-actions").innerHTML = html;
   }
 
-  window.HKUI = { avatar, badge, el, initials, notify, renderStats, routeStatusLabel, setActions, shell };
+  window.HKUI = { avatar, badge, el, initials, initSidebar, notify, renderStats, routeStatusLabel, setActions, shell };
 })();

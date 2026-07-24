@@ -45,6 +45,7 @@
     const page = document.body.dataset.page || "dashboard";
     window.HKStorage.seedIfEmpty();
     document.querySelector("#app-shell").innerHTML = window.HKUI.shell(page);
+    window.HKUI.initSidebar();
     renderPage(page);
   });
 })();

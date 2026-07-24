@@ -39,6 +39,7 @@ a {
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr);
   min-height: 100vh;
+  transition: grid-template-columns var(--transition);
 }
 
 .main-frame {
