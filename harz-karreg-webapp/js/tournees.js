@@ -6,28 +6,32 @@
     { value: "Annulee", label: "Annulée" }
   ];
 
+  function repository(collection) {
+    return window.HKRepositories.get(collection);
+  }
+
   function driverOptions() {
     return [
       { value: "", label: "Non affecté" },
-      ...window.HKStorage.load("conducteurs").map((driver) => ({ value: driver.id, label: `${driver.prenom} ${driver.nom}` }))
+      ...repository("conducteurs").list().map((driver) => ({ value: driver.id, label: `${driver.prenom} ${driver.nom}` }))
     ];
   }
 
   function trailerOptions() {
-    return window.HKStorage.load("remorques").map((trailer) => ({ value: trailer.id, label: `${trailer.immatriculation} - ${trailer.type}` }));
+    return repository("remorques").list().map((trailer) => ({ value: trailer.id, label: `${trailer.immatriculation} - ${trailer.type}` }));
   }
 
   function truckOptions() {
     return [
       { value: "", label: "Sans camion" },
-      ...window.HKStorage.load("camions").map((truck) => ({ value: truck.id, label: `${truck.marque} ${truck.modele} - ${truck.immatriculation}` }))
+      ...repository("camions").list().map((truck) => ({ value: truck.id, label: `${truck.marque} ${truck.modele} - ${truck.immatriculation}` }))
     ];
   }
 
   function binOptions() {
     return [
       { value: "", label: "Sans benne" },
-      ...window.HKStorage.load("bennes").map((bin) => ({ value: bin.id, label: `${bin.nom} - ${bin.statut}` }))
+      ...repository("bennes").list().map((bin) => ({ value: bin.id, label: `${bin.nom} - ${bin.statut}` }))
     ];
   }
 
@@ -36,7 +40,7 @@
   }
 
   function materialOptions(route = {}) {
-    const options = window.HKStorage.load("matieres")
+    const options = repository("matieres").list()
       .slice()
       .sort((a, b) => materialDisplay(a).localeCompare(materialDisplay(b), "fr"))
       .map((material) => ({ value: material.id, label: materialDisplay(material) }));
@@ -57,7 +61,7 @@
   }
 
   function addressOptions(currentValue, includeEmpty = true) {
-    const addresses = window.HKStorage.load("adresses")
+    const addresses = repository("adresses").list()
       .map((address, index) => ({ ...address, _position: index }))
       .sort((a, b) => (a.ordre ?? a._position) - (b.ordre ?? b._position));
     const options = addresses.map((address) => ({
@@ -102,7 +106,7 @@
           data.heure = "07:00";
           data.heureFin = "17:00";
         }
-        const selectedMaterial = window.HKStorage.load("matieres").find((material) => material.id === data.matiereId);
+        const selectedMaterial = repository("matieres").list().find((material) => material.id === data.matiereId);
         if (data.matiereId === "__legacy__") {
           data.matiereId = "";
           data.description = initialRoute.description || "";
@@ -110,9 +114,9 @@
           data.description = selectedMaterial ? selectedMaterial.nom : "";
         }
         if (isExisting) {
-          window.HKStorage.update("tournees", initialRoute.id, data);
+          repository("tournees").update(initialRoute.id, data);
         } else {
-          window.HKStorage.save("tournees", data);
+          repository("tournees").create(data);
         }
         window.HKUI.notify("Tournée enregistrée.");
         render();
@@ -125,7 +129,7 @@
 
   function removeRoute(id) {
     if (!confirm("Supprimer cette tournée ?")) return;
-    window.HKStorage.remove("tournees", id);
+    repository("tournees").remove(id);
     window.HKUI.notify("Tournée supprimée.");
     render();
   }
@@ -133,12 +137,12 @@
   function render() {
     if (document.body.dataset.page !== "tournees") return;
     const workspace = document.querySelector("#workspace");
-    const routes = window.HKStorage.load("tournees");
-    const drivers = window.HKStorage.load("conducteurs");
-    const trailers = window.HKStorage.load("remorques");
-    const trucks = window.HKStorage.load("camions");
-    const bins = window.HKStorage.load("bennes");
-    const materials = window.HKStorage.load("matieres");
+    const routes = repository("tournees").list();
+    const drivers = repository("conducteurs").list();
+    const trailers = repository("remorques").list();
+    const trucks = repository("camions").list();
+    const bins = repository("bennes").list();
+    const materials = repository("matieres").list();
 
     workspace.innerHTML = `
       <div class="table-wrap">

@@ -65,6 +65,10 @@ Interface ADMIN / COMPANION / DRIVER
 
 Le renderer n'accede jamais directement au systeme de fichiers, a SQLite ou aux secrets. Il appelle une API etroite exposee par le preload. Le processus principal valide chaque message IPC avant d'appeler les services locaux.
 
+### Etape de transition
+
+Le MVP utilise temporairement `HKRepositories`, une facade synchrone qui delegue encore a `HKStorage`. Les modules sont migres un par un vers cette facade afin de stabiliser le contrat avant l'introduction de SQLite. Tant que cette transition n'est pas achevee, le comportement et le format des donnees `localStorage` restent strictement inchanges.
+
 ## Modele de donnees
 
 Les collections actuelles sont conservees et normalisees. Les tables partagees portent toutes un `organization_id` afin d'isoler les entreprises.
