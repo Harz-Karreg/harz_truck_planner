@@ -1,6 +1,6 @@
 {
   "name": "harz-karreg-desktop",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "description": "Plateforme desktop de planification transport HARZ KARREG",
   "author": "HARZ KARREG",
@@ -63,8 +63,5 @@
       "createStartMenuShortcut": true,
       "shortcutName": "HARZ KARREG"
     }
-  },
-  "dependencies": {
-    "electron-updater": "6.8.9"
   }
 }

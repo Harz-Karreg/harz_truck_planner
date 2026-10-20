@@ -22,6 +22,13 @@ test("le planning permet de publier les brouillons de la semaine", () => {
   assert.match(planning, /publicationStatut: "Publiee"/);
 });
 
+test("la vue semaine permet de verrouiller l'écran", () => {
+  const planning = fs.readFileSync(path.join(scripts, "planning.js"), "utf8");
+
+  assert.match(planning, /data-week-screen-lock/);
+  assert.match(planning, /#screen-lock-button/);
+});
+
 test("la remise a zero exige une confirmation et sauvegarde avant de vider", () => {
   const settings = fs.readFileSync(path.join(scripts, "settings.js"), "utf8");
   const resetFunction = settings.slice(settings.indexOf("function openDataReset()"), settings.indexOf("function render()"));

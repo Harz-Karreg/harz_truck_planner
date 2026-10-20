@@ -719,6 +719,9 @@
           </div>
           <div class="week-modal-status">
             <span class="slideshow-countdown" data-slideshow-countdown>${configuration.planningVerrouille ? "PAUSE" : formatCountdown(configuration.planningDuree)}</span>
+            <button class="week-screen-lock-button" type="button" data-week-screen-lock aria-label="Verrouiller l’écran" title="Verrouiller l’écran">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.8"/></svg>
+            </button>
             <button class="planning-lock-button ${configuration.planningVerrouille ? "locked" : ""}" type="button" data-modal-planning-lock>
               ${configuration.planningVerrouille ? "🔒 Vue semaine verrouillée" : "▶ Diaporama semaine actif"}
             </button>
@@ -775,6 +778,9 @@
         node.querySelector("[data-modal-planning-lock]")?.addEventListener("click", () => {
           repository("configuration").update(configuration.id, { planningVerrouille: !configuration.planningVerrouille });
           openWeekView(days, drivers, trailers, trucks, bins, mode);
+        });
+        node.querySelector("[data-week-screen-lock]")?.addEventListener("click", () => {
+          document.querySelector("#screen-lock-button")?.click();
         });
         node.querySelectorAll("[data-week-route]").forEach((button) => {
           button.addEventListener("click", () => {
