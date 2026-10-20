@@ -29,6 +29,10 @@ function createContext() {
     },
     remove(collection, id) {
       calls.push(["remove", collection, id]);
+    },
+    clear(collection) {
+      calls.push(["clear", collection]);
+      return [];
     }
   };
   const context = vm.createContext({ window: { HKStorage: storage } });
@@ -65,13 +69,15 @@ test("le repository legacy delegue le CRUD sans transformer les donnees", () => 
   routes.create(entity);
   routes.update("route-1", patch);
   routes.remove("route-1");
+  routes.clear();
 
   assert.deepEqual(calls, [
     ["load", "tournees"],
     ["getById", "tournees", "route-1"],
     ["save", "tournees", entity],
     ["update", "tournees", "route-1", patch],
-    ["remove", "tournees", "route-1"]
+    ["remove", "tournees", "route-1"],
+    ["clear", "tournees"]
   ]);
 });
 

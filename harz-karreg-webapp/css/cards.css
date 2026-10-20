@@ -294,6 +294,19 @@
   gap: 8px;
 }
 
+.reset-data-panel {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  border-color: rgba(255, 92, 122, 0.22);
+}
+
+.reset-data-panel h2 {
+  margin: 8px 0 0;
+}
+
 .lock-background-file {
   position: relative;
   overflow: hidden;
@@ -428,7 +441,8 @@
     grid-template-columns: 1fr;
   }
 
-  .lock-settings-panel {
+  .lock-settings-panel,
+  .reset-data-panel {
     grid-template-columns: 1fr;
   }
 }

@@ -118,7 +118,8 @@
         camionId: "trk-renault-t-01",
         benneId: "bin-btp-01",
         description: "Materiaux BTP pour chantier nord.",
-        statut: "Planifiee"
+        statut: "Planifiee",
+        publicationStatut: "Publiee"
       },
       {
         id: "run-nantes-quimper",
@@ -132,7 +133,8 @@
         camionId: "trk-scania-r-02",
         benneId: "",
         description: "Livraison alimentaire sous temperature dirigee.",
-        statut: "En cours"
+        statut: "En cours",
+        publicationStatut: "Publiee"
       },
       {
         id: "run-lorient-vannes",
@@ -146,7 +148,8 @@
         camionId: "trk-renault-t-01",
         benneId: "bin-ville-02",
         description: "Materiel industriel.",
-        statut: "Planifiee"
+        statut: "Planifiee",
+        publicationStatut: "Publiee"
       }
     ],
     disponibilites: [],
@@ -209,6 +212,10 @@
     return read(collection).find((item) => item.id === id);
   }
 
+  function clear(collection) {
+    return write(collection, []);
+  }
+
   function seedIfEmpty() {
     Object.keys(keys).forEach((collection) => {
       if (localStorage.getItem(keys[collection]) === null) {
@@ -217,5 +224,5 @@
     });
   }
 
-  window.HKStorage = { getById, load, remove, save, seedIfEmpty, update };
+  window.HKStorage = { clear, getById, load, remove, save, seedIfEmpty, update };
 })();

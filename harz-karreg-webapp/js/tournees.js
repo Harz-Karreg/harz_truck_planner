@@ -5,6 +5,10 @@
     { value: "Terminee", label: "Terminée" },
     { value: "Annulee", label: "Annulée" }
   ];
+  const publicationOptions = [
+    { value: "Brouillon", label: "Brouillon" },
+    { value: "Publiee", label: "Publiée" }
+  ];
 
   function repository(collection) {
     return window.HKRepositories.get(collection);
@@ -90,6 +94,7 @@
       { name: "camionId", label: "Camion", type: "select", value: route.camionId, options: truckOptions() },
       { name: "benneId", label: "Benne", type: "select", value: route.benneId, options: binOptions() },
       { name: "statut", label: "Statut", type: "select", value: route.statut || "Planifiee", options: statusOptions },
+      { name: "publicationStatut", label: "Publication", type: "select", value: route.publicationStatut || (route.id ? "Publiee" : "Brouillon"), options: publicationOptions },
       { name: "matiereId", label: "Matière", type: "select", value: route.matiereId || (route.description ? "__legacy__" : ""), options: materialOptions(route), full: true }
     ];
   }
@@ -159,6 +164,7 @@
               <th>Camion</th>
               <th>Benne</th>
               <th>Statut</th>
+              <th>Publication</th>
               <th></th>
             </tr>
           </thead>
@@ -180,6 +186,7 @@
                   <td>${truck ? truck.immatriculation : "Sans camion"}</td>
                   <td>${bin ? bin.nom : "Sans benne"}</td>
                   <td><span class="badge">${window.HKUI.routeStatusLabel(route.statut)}</span></td>
+                  <td><span class="badge ${route.publicationStatut === "Brouillon" ? "warning" : "success"}">${route.publicationStatut || "Publiée"}</span></td>
                   <td class="actions">
                     <button class="icon-button" data-edit="${route.id}" aria-label="Modifier">✎</button>
                     <button class="icon-button" data-delete="${route.id}" aria-label="Supprimer">×</button>

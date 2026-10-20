@@ -641,6 +641,24 @@
   transition: transform var(--transition), opacity var(--transition), border var(--transition);
 }
 
+.route-card.route-draft {
+  border-style: dashed;
+  opacity: 0.82;
+}
+
+.route-publication-badge {
+  align-self: flex-start;
+  padding: 3px 7px;
+  color: var(--warning);
+  background: rgba(255, 209, 102, 0.08);
+  border: 1px solid rgba(255, 209, 102, 0.26);
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .day-timeline .route-card {
   position: absolute;
   z-index: 3;

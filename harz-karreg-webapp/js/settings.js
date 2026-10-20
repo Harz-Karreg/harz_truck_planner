@@ -1,4 +1,10 @@
 (function () {
+  const businessCollections = ["conducteurs", "camions", "bennes", "remorques", "tournees", "disponibilites", "matieres", "adresses"];
+
+  function repository(collection) {
+    return window.HKRepositories.get(collection);
+  }
+
   function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -298,6 +304,56 @@
     reader.readAsText(file, "utf-8");
   }
 
+  function downloadBackup() {
+    const collections = Object.fromEntries(
+      window.HKRepositories.collections.map((collection) => {
+        const values = repository(collection).list();
+        if (collection !== "configuration") return [collection, values];
+        return [collection, values.map(({ verrouillageMotDePasse, ...configuration }) => configuration)];
+      })
+    );
+    const backup = {
+      format: "harz-karreg-backup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      collections
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `harz-karreg-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function openDataReset() {
+    window.HKModal.open({
+      title: "Réinitialiser les données métier",
+      submitLabel: "Sauvegarder et réinitialiser",
+      fields: [
+        {
+          name: "confirmation",
+          label: "Saisissez REINITIALISER pour confirmer",
+          value: "",
+          required: true,
+          full: true
+        }
+      ],
+      onSubmit(data) {
+        if (data.confirmation.trim() !== "REINITIALISER") {
+          window.HKUI.notify("Confirmation incorrecte. Aucune donnée supprimée.");
+          return false;
+        }
+        downloadBackup();
+        businessCollections.forEach((collection) => repository(collection).clear());
+        window.HKUI.notify("Les données métier ont été réinitialisées. Une sauvegarde JSON a été téléchargée.");
+        render();
+        return true;
+      }
+    });
+  }
+
   function render() {
     if (document.body.dataset.page !== "settings") return;
     const workspace = document.querySelector("#workspace");
@@ -424,6 +480,15 @@
           </div>
           <p class="settings-help lock-status">${configuration.verrouillageMotDePasse ? "Verrouillage prêt à être utilisé." : "Aucun mot de passe défini."}</p>
         </article>
+
+        <article class="card panel reset-data-panel">
+          <div>
+            <span class="day-panel-label">Administration locale</span>
+            <h2>Remise à zéro des données</h2>
+            <p class="settings-help">Télécharge une sauvegarde JSON, puis vide les chauffeurs, véhicules, remorques, bennes, tournées, disponibilités, matières et adresses. La configuration de l’interface est conservée.</p>
+          </div>
+          <button class="button danger" type="button" data-reset-business-data>Réinitialiser les données métier</button>
+        </article>
       </section>
     `;
 
@@ -459,6 +524,7 @@
     workspace.querySelector("[data-lock-password]").addEventListener("click", () => openLockSettings(configuration));
     workspace.querySelector("[data-lock-background]").addEventListener("change", (event) => saveLockBackground(event.target.files[0]));
     workspace.querySelector("[data-remove-lock-background]")?.addEventListener("click", removeLockBackground);
+    workspace.querySelector("[data-reset-business-data]").addEventListener("click", openDataReset);
   }
 
   window.HKSettings = { render };

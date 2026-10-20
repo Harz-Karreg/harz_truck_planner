@@ -83,8 +83,8 @@
     bindClose(node);
     node.querySelector("form").addEventListener("submit", (event) => {
       event.preventDefault();
-      config.onSubmit(collect(event.currentTarget));
-      close();
+      const result = config.onSubmit(collect(event.currentTarget));
+      if (result !== false) close();
     });
   }
 

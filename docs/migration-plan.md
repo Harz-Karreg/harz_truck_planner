@@ -49,6 +49,8 @@ Ajouter le schema local et un assistant d'import : export brut, validation, simu
 
 Brancher progressivement les ecrans actuels sur les services communs. Separer les statuts operationnels de l'etat brouillon/publie et ajouter la publication versionnee d'un planning.
 
+Premiere etape implementee dans le stockage legacy : les nouvelles tournees sont des brouillons, les donnees historiques sont considerees publiees et l'administrateur peut publier les brouillons d'une semaine. La version de publication partagee sera ajoutee avec le futur stockage structure.
+
 ### 8. Supabase et isolation
 
 Ajouter les migrations PostgreSQL, Supabase Auth, les organisations, memberships et politiques RLS. Les tests doivent prouver qu'un utilisateur ne peut jamais lire les donnees d'une autre entreprise.

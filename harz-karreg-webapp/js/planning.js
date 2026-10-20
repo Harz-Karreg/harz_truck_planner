@@ -144,9 +144,27 @@
       ...route,
       id: undefined,
       nom: `${route.nom} copie`,
-      statut: "Planifiee"
+      statut: "Planifiee",
+      publicationStatut: "Brouillon"
     });
     window.HKUI.notify("Tournée dupliquée.");
+    render();
+  }
+
+  function publicationStatus(route) {
+    return route.publicationStatut || "Publiee";
+  }
+
+  function publishWeek(days) {
+    const dates = days.map((day) => day.iso);
+    const drafts = repository("tournees").list().filter((route) => dates.includes(route.date) && publicationStatus(route) === "Brouillon");
+    if (!drafts.length) {
+      window.HKUI.notify("Toutes les tournées de cette semaine sont déjà publiées.");
+      return;
+    }
+    if (!confirm(`Publier ${drafts.length} tournée${drafts.length === 1 ? "" : "s"} de cette semaine ?`)) return;
+    drafts.forEach((route) => repository("tournees").update(route.id, { publicationStatut: "Publiee" }));
+    window.HKUI.notify(`${drafts.length} tournée${drafts.length === 1 ? " publiée" : "s publiées"}.`);
     render();
   }
 
@@ -479,7 +497,7 @@
       : "";
 
     return `
-      <article class="route-card ${statusClass} ${isAssignable ? "" : "route-alert"}" draggable="true" data-route-id="${route.id}" ${style}>
+      <article class="route-card ${statusClass} ${publicationStatus(route) === "Brouillon" ? "route-draft" : ""} ${isAssignable ? "" : "route-alert"}" draggable="true" data-route-id="${route.id}" ${style}>
         <div class="route-window-actions">
           ${isAssignable ? "" : `<span class="route-alert-badge" title="Chauffeur indisponible">!</span>`}
           <button class="route-icon-action" type="button" data-duplicate-route="${route.id}" aria-label="Dupliquer la tournée">+</button>
@@ -488,6 +506,7 @@
         <div class="route-scroll">
           <h3 class="route-title">${driver ? driverName(driver) : "Non assigné"}</h3>
           <div class="route-week-name">${route.nom}</div>
+          ${publicationStatus(route) === "Brouillon" ? '<span class="route-publication-badge">Brouillon</span>' : ""}
           ${routeMaterialLabel(route) ? `<div class="route-material">${escapeHtml(routeMaterialLabel(route))}</div>` : ""}
           <div class="route-meta">${escapeHtml(routeTimeLabel(route))} · ${route.depart} -> ${route.arrivee}</div>
           ${trailer ? `<div class="route-meta">${trailerName(trailer)}</div>` : ""}
@@ -1318,6 +1337,7 @@
         </div>
         <div class="actions">
           <button class="button ghost" type="button" data-open-archives>Archives</button>
+          <button class="button primary" type="button" data-publish-week>Publier la semaine</button>
           <button class="button ghost" type="button" data-open-week>Vue semaine</button>
         </div>
       </div>
@@ -1341,6 +1361,7 @@
     `);
 
     bindWeekControls();
+    workspace.querySelector("[data-publish-week]").addEventListener("click", () => publishWeek(days));
     bindAvailabilityControls(days, drivers);
     bindRouteActions();
     bindRouteOpen(days, drivers, trailers, trucks, bins);

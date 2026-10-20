@@ -39,6 +39,9 @@
       },
       remove(id) {
         return storage().remove(collection, id);
+      },
+      clear() {
+        return storage().clear(collection);
       }
     });
   }
