@@ -23,6 +23,10 @@
   const timeGutter = 42;
   const minimumRouteDuration = 60;
 
+  function repository(collection) {
+    return window.HKRepositories.get(collection);
+  }
+
   function driverName(driver) {
     return driver ? `${driver.prenom} ${driver.nom}` : "Non assigné";
   }
@@ -40,7 +44,7 @@
   }
 
   function routeMaterialLabel(route) {
-    const material = window.HKStorage.load("matieres").find((item) => item.id === route.matiereId);
+    const material = repository("matieres").list().find((item) => item.id === route.matiereId);
     if (!material) return route.description || "";
     return material.code ? `${material.code} — ${material.nom}` : material.nom;
   }
@@ -57,7 +61,7 @@
       planningVerrouille: false,
       planningDuree: 15,
       planningEcrans: ["bennes", "semi", "porteurs"],
-      ...(window.HKStorage.load("configuration")[0] || {})
+      ...(repository("configuration").list()[0] || {})
     };
   }
 
@@ -102,7 +106,7 @@
 
   function getAvailability(driver, days) {
     const weekStart = days[0].iso;
-    const existing = window.HKStorage.load("disponibilites").find((item) => item.driverId === driver.id && item.weekStart === weekStart);
+    const existing = repository("disponibilites").list().find((item) => item.driverId === driver.id && item.weekStart === weekStart);
 
     if (existing) {
       return { ...defaultAvailability(driver, days), ...existing.days };
@@ -113,18 +117,18 @@
 
   function setAvailability(driver, days, dayIso, available) {
     const weekStart = days[0].iso;
-    const existing = window.HKStorage.load("disponibilites").find((item) => item.driverId === driver.id && item.weekStart === weekStart);
+    const existing = repository("disponibilites").list().find((item) => item.driverId === driver.id && item.weekStart === weekStart);
     const nextDays = {
       ...getAvailability(driver, days),
       [dayIso]: available
     };
 
     if (existing) {
-      window.HKStorage.update("disponibilites", existing.id, { days: nextDays });
+      repository("disponibilites").update(existing.id, { days: nextDays });
       return;
     }
 
-    window.HKStorage.save("disponibilites", {
+    repository("disponibilites").create({
       id: availabilityId(driver.id, weekStart),
       driverId: driver.id,
       weekStart,
@@ -133,10 +137,10 @@
   }
 
   function duplicateRoute(routeId) {
-    const route = window.HKStorage.getById("tournees", routeId);
+    const route = repository("tournees").getById(routeId);
     if (!route) return;
 
-    window.HKStorage.save("tournees", {
+    repository("tournees").create({
       ...route,
       id: undefined,
       nom: `${route.nom} copie`,
@@ -424,10 +428,10 @@
   }
 
   function exportRoutesPdf(title, routes) {
-    const drivers = window.HKStorage.load("conducteurs");
-    const trailers = window.HKStorage.load("remorques");
-    const trucks = window.HKStorage.load("camions");
-    const bins = window.HKStorage.load("bennes");
+    const drivers = repository("conducteurs").list();
+    const trailers = repository("remorques").list();
+    const trucks = repository("camions").list();
+    const bins = repository("bennes").list();
     const sortedRoutes = routes.slice().sort((a, b) => `${a.date} ${a.heure}`.localeCompare(`${b.date} ${b.heure}`));
     const pdf = createRoutesPdf(title, sortedRoutes, drivers, trailers, trucks, bins);
     downloadBlob(pdf, `${safeFileName(title)}.pdf`);
@@ -435,11 +439,11 @@
   }
 
   function exportArchivedWeeksPdf(offsets) {
-    const drivers = window.HKStorage.load("conducteurs");
-    const trailers = window.HKStorage.load("remorques");
-    const trucks = window.HKStorage.load("camions");
-    const bins = window.HKStorage.load("bennes");
-    const allRoutes = window.HKStorage.load("tournees");
+    const drivers = repository("conducteurs").list();
+    const trailers = repository("remorques").list();
+    const trucks = repository("camions").list();
+    const bins = repository("bennes").list();
+    const allRoutes = repository("tournees").list();
     const files = offsets.map((offset) => {
       const days = window.HKCalendar.currentWeek(offset);
       const dates = days.map((day) => day.iso);
@@ -539,7 +543,7 @@
   }
 
   function openDayView(day, days, drivers, trailers, trucks, bins) {
-    const routes = window.HKStorage.load("tournees").filter((route) => route.date === day.iso);
+    const routes = repository("tournees").list().filter((route) => route.date === day.iso);
     const activeDrivers = drivers.filter((driver) => Boolean(getAvailability(driver, days)[day.iso]));
     const inactiveDrivers = drivers.filter((driver) => !getAvailability(driver, days)[day.iso]);
     const activeIds = new Set(activeDrivers.map((driver) => driver.id));
@@ -641,7 +645,7 @@
 
         node.querySelectorAll("[data-day-route]").forEach((button) => {
           button.addEventListener("click", () => {
-            const route = window.HKStorage.getById("tournees", button.dataset.dayRoute);
+            const route = repository("tournees").getById(button.dataset.dayRoute);
             if (route) openRouteEditor(route, days, drivers, trailers, trucks, bins);
           });
         });
@@ -666,7 +670,7 @@
     const dates = days.map((day) => day.iso);
     let configuration = planningConfiguration();
     if (requestedMode && requestedMode !== configuration.planningVue) {
-      window.HKStorage.update("configuration", configuration.id, { planningVue: requestedMode });
+      repository("configuration").update(configuration.id, { planningVue: requestedMode });
       configuration = planningConfiguration();
     }
     const availableModes = enabledPlanningModes(configuration);
@@ -674,14 +678,14 @@
       ? configuration.planningVue
       : availableModes[0].value;
     if (mode !== configuration.planningVue) {
-      window.HKStorage.update("configuration", configuration.id, { planningVue: mode });
+      repository("configuration").update(configuration.id, { planningVue: mode });
       configuration = planningConfiguration();
     }
     const modeLabel = planningModes.find((item) => item.value === mode)?.label || "Planning";
     document.querySelectorAll("[data-planning-mode]").forEach((button) => {
       button.classList.toggle("active", button.dataset.planningMode === mode);
     });
-    const routes = window.HKStorage.load("tournees").filter((route) => dates.includes(route.date) && routeMatchesPlanningMode(route, mode, trucks));
+    const routes = repository("tournees").list().filter((route) => dates.includes(route.date) && routeMatchesPlanningMode(route, mode, trucks));
     const activeDrivers = drivers.filter((driver) => days.some((day) => getAvailability(driver, days)[day.iso]));
 
     window.HKModal.openContent({
@@ -750,12 +754,12 @@
           button.addEventListener("click", () => openWeekView(days, drivers, trailers, trucks, bins, button.dataset.modalPlanningMode));
         });
         node.querySelector("[data-modal-planning-lock]")?.addEventListener("click", () => {
-          window.HKStorage.update("configuration", configuration.id, { planningVerrouille: !configuration.planningVerrouille });
+          repository("configuration").update(configuration.id, { planningVerrouille: !configuration.planningVerrouille });
           openWeekView(days, drivers, trailers, trucks, bins, mode);
         });
         node.querySelectorAll("[data-week-route]").forEach((button) => {
           button.addEventListener("click", () => {
-            const route = window.HKStorage.getById("tournees", button.dataset.weekRoute);
+            const route = repository("tournees").getById(button.dataset.weekRoute);
             if (route) openRouteEditor(route, days, drivers, trailers, trucks, bins);
           });
         });
@@ -845,9 +849,9 @@
         event.preventDefault();
         column.classList.remove("drag-over");
         const id = event.dataTransfer.getData("text/plain");
-        const route = window.HKStorage.getById("tournees", id);
+        const route = repository("tournees").getById(id);
         const days = window.HKCalendar.currentWeek(selectedWeekOffset);
-        const drivers = window.HKStorage.load("conducteurs");
+        const drivers = repository("conducteurs").list();
         const driver = route ? drivers.find((item) => item.id === route.conducteurId) : null;
 
         if (driver && !getAvailability(driver, days)[column.dataset.date]) {
@@ -855,7 +859,7 @@
           return;
         }
 
-        window.HKStorage.update("tournees", id, {
+        repository("tournees").update(id, {
           date: column.dataset.date,
           heure: route.journeeEntiere ? "07:00" : dropTimeFromEvent(event, column)
         });
@@ -979,7 +983,7 @@
           return;
         }
 
-        window.HKStorage.update("tournees", route.id, {
+        repository("tournees").update(route.id, {
           conducteurId: data.conducteurId,
           heure: data.heure,
           heureFin: data.heureFin,
@@ -998,7 +1002,7 @@
     document.querySelectorAll(".route-card").forEach((card) => {
       card.addEventListener("click", (event) => {
         if (event.target.closest("button, select")) return;
-        const route = window.HKStorage.getById("tournees", card.dataset.routeId);
+        const route = repository("tournees").getById(card.dataset.routeId);
         if (!route) return;
         openRouteEditor(route, days, drivers, trailers, trucks, bins);
       });
@@ -1009,7 +1013,7 @@
     document.querySelectorAll("[data-route-status-select]").forEach((select) => {
       select.addEventListener("pointerdown", (event) => event.stopPropagation());
       select.addEventListener("change", () => {
-        window.HKStorage.update("tournees", select.dataset.routeStatusSelect, { statut: select.value });
+        repository("tournees").update(select.dataset.routeStatusSelect, { statut: select.value });
         window.HKUI.notify("Statut de tournée mis à jour.");
         render();
       });
@@ -1027,7 +1031,7 @@
       button.addEventListener("pointerdown", (event) => event.stopPropagation());
       button.addEventListener("click", (event) => {
         event.stopPropagation();
-        window.HKStorage.remove("tournees", button.dataset.deleteRoute);
+        repository("tournees").remove(button.dataset.deleteRoute);
         window.HKUI.notify("Tournée supprimée.");
         render();
       });
@@ -1050,7 +1054,7 @@
         const weekOffset = Number(button.dataset.exportWeek);
         const weekDays = window.HKCalendar.currentWeek(weekOffset);
         const dates = weekDays.map((day) => day.iso);
-        const routes = window.HKStorage.load("tournees").filter((route) => dates.includes(route.date));
+        const routes = repository("tournees").list().filter((route) => dates.includes(route.date));
         exportRoutesPdf(`Résumé semaine ${button.dataset.weekNumber} · ${weekDays[0].label} - ${weekDays[6].label}`, routes);
       });
     });
@@ -1059,7 +1063,7 @@
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const day = days.find((item) => item.iso === button.dataset.exportDay);
-        const routes = window.HKStorage.load("tournees").filter((route) => route.date === button.dataset.exportDay);
+        const routes = repository("tournees").list().filter((route) => route.date === button.dataset.exportDay);
         exportRoutesPdf(`Résumé ${day ? `${day.name} ${day.label}` : button.dataset.exportDay}`, routes);
       });
     });
@@ -1083,7 +1087,7 @@
 
   function openWeekArchives() {
     const archives = window.HKCalendar.pastWeeks(52);
-    const routes = window.HKStorage.load("tournees");
+    const routes = repository("tournees").list();
     const years = [...new Set(archives.map((week) => week.year))];
     window.HKModal.openContent({
       title: "Archives des plannings",
@@ -1297,12 +1301,12 @@
     const currentOption = weekOptions.find((week) => week.offset === selectedWeekOffset)
       || archiveOptions.find((week) => week.offset === selectedWeekOffset)
       || weekOptions[1];
-    const drivers = window.HKStorage.load("conducteurs");
-    const trailers = window.HKStorage.load("remorques");
-    const trucks = window.HKStorage.load("camions");
-    const bins = window.HKStorage.load("bennes");
+    const drivers = repository("conducteurs").list();
+    const trailers = repository("remorques").list();
+    const trucks = repository("camions").list();
+    const bins = repository("bennes").list();
     const configuration = planningConfiguration();
-    const routes = window.HKStorage.load("tournees");
+    const routes = repository("tournees").list();
 
     workspace.querySelector(".week-board")?._topScrollObserver?.disconnect();
     workspace.innerHTML = "";

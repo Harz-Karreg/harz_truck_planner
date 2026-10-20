@@ -94,3 +94,10 @@ test("le module Tournees n'accede plus directement a HKStorage", () => {
   assert.doesNotMatch(routes, /HKStorage/);
   assert.match(routes, /HKRepositories/);
 });
+
+test("le module Planning n'accede plus directement a HKStorage", () => {
+  const planning = fs.readFileSync(path.join(webapp, "js", "planning.js"), "utf8");
+
+  assert.doesNotMatch(planning, /HKStorage/);
+  assert.match(planning, /HKRepositories/);
+});
