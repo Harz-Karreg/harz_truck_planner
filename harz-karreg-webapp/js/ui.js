@@ -224,7 +224,7 @@
             ${brandMark}
             <span class="brand-copy">
               <strong class="brand-title">Harz Karreg</strong>
-              <span class="brand-subtitle">Local fleet intelligence</span>
+              <span class="brand-subtitle">DRIVE BEYOND.</span>
             </span>
           </a>
           <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-expanded="${String(!collapsed)}" aria-label="${collapsed ? "Déployer la navigation" : "Rétracter la navigation"}">
@@ -237,10 +237,6 @@
                 <span class="nav-label">${item.label}</span>
               </a>`).join("")}
           </nav>
-          <div class="side-panel">
-            <strong>Local first</strong>
-            <p>Données persistées dans le navigateur. Aucun serveur, aucune base externe.</p>
-          </div>
           <div class="sidebar-tools">
             <a class="sidebar-tool-button ${page === "settings" ? "active" : ""}" href="settings.html" title="Paramètres">
               ${icons.settings}<span class="sidebar-tool-label">Paramètres</span>
@@ -272,6 +268,7 @@
                 </div>
               </div>
             </div>
+            <div class="side-panel side-version">Version 0.1.4</div>
           </div>
         </aside>
         <main class="main-frame">

@@ -467,6 +467,19 @@
   line-height: 1.6;
 }
 
+.side-version {
+  border: 0;
+  border-radius: 0;
+  padding: 5px 8px;
+  background: transparent;
+  color: var(--muted-2);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 @media (max-width: 980px) {
   .app-layout.sidebar-collapsed {
     grid-template-columns: 1fr;
