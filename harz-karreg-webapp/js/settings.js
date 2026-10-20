@@ -304,7 +304,7 @@
     reader.readAsText(file, "utf-8");
   }
 
-  function downloadBackup() {
+  function buildBackup() {
     const collections = Object.fromEntries(
       window.HKRepositories.collections.map((collection) => {
         const values = repository(collection).list();
@@ -318,6 +318,11 @@
       exportedAt: new Date().toISOString(),
       collections
     };
+    return backup;
+  }
+
+  function downloadBackup() {
+    const backup = buildBackup();
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -325,6 +330,149 @@
     link.download = `harz-karreg-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function validateBackup(candidate) {
+    if (!candidate || candidate.format !== "harz-karreg-backup" || candidate.version !== 1) {
+      throw new Error("Ce fichier n’est pas une sauvegarde HARZ KARREG compatible.");
+    }
+    if (!candidate.collections || typeof candidate.collections !== "object") {
+      throw new Error("La sauvegarde ne contient aucune collection.");
+    }
+
+    const counts = {};
+    businessCollections.forEach((collection) => {
+      const values = candidate.collections[collection];
+      if (!Array.isArray(values)) throw new Error(`Collection manquante ou invalide : ${collection}.`);
+      const ids = new Set();
+      values.forEach((entity, index) => {
+        if (!entity || typeof entity !== "object" || Array.isArray(entity)) {
+          throw new Error(`${collection} contient une ligne invalide à la position ${index + 1}.`);
+        }
+        if (typeof entity.id !== "string" || !entity.id.trim()) {
+          throw new Error(`${collection} contient une ligne sans identifiant valide.`);
+        }
+        if (ids.has(entity.id)) throw new Error(`${collection} contient l’identifiant dupliqué ${entity.id}.`);
+        ids.add(entity.id);
+      });
+      counts[collection] = values.length;
+    });
+
+    const lookup = Object.fromEntries(
+      ["conducteurs", "camions", "bennes", "remorques", "matieres"].map((collection) => [
+        collection,
+        new Set(candidate.collections[collection].map((entity) => entity.id))
+      ])
+    );
+    const references = [
+      ["conducteurId", "conducteurs", "chauffeur"],
+      ["camionId", "camions", "camion"],
+      ["benneId", "bennes", "benne"],
+      ["remorqueId", "remorques", "remorque"],
+      ["matiereId", "matieres", "matière"]
+    ];
+    const warnings = [];
+    candidate.collections.tournees.forEach((route) => {
+      references.forEach(([field, collection, label]) => {
+        if (route[field] && !lookup[collection].has(route[field])) {
+          warnings.push(`${route.nom || route.id} : ${label} introuvable (${route[field]}).`);
+        }
+      });
+    });
+
+    return { backup: candidate, counts, warnings };
+  }
+
+  function replaceBusinessData(report) {
+    const previous = Object.fromEntries(
+      businessCollections.map((collection) => [collection, repository(collection).list()])
+    );
+
+    try {
+      businessCollections.forEach((collection) => {
+        repository(collection).clear();
+        report.backup.collections[collection].forEach((entity) => repository(collection).create(entity));
+      });
+    } catch (error) {
+      businessCollections.forEach((collection) => {
+        repository(collection).clear();
+        previous[collection].forEach((entity) => repository(collection).create(entity));
+      });
+      throw error;
+    }
+  }
+
+  function openRestorePreview(report) {
+    const collectionLabels = {
+      conducteurs: "Chauffeurs",
+      camions: "Camions",
+      bennes: "Bennes",
+      remorques: "Remorques",
+      tournees: "Tournées",
+      disponibilites: "Disponibilités",
+      matieres: "Matières",
+      adresses: "Adresses"
+    };
+    window.HKModal.openContent({
+      title: "Aperçu de la restauration",
+      eyebrow: "Sauvegarde validée",
+      className: "backup-preview-modal",
+      content: `
+        <div class="backup-count-grid">
+          ${businessCollections.map((collection) => `<div><strong>${report.counts[collection]}</strong><span>${collectionLabels[collection]}</span></div>`).join("")}
+        </div>
+        ${report.warnings.length ? `
+          <div class="backup-warning-list">
+            <strong>${report.warnings.length} référence${report.warnings.length === 1 ? " à vérifier" : "s à vérifier"}</strong>
+            <ul>${report.warnings.slice(0, 8).map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>
+          </div>
+        ` : '<p class="backup-validation-ok">Toutes les références de tournées sont cohérentes.</p>'}
+        <p class="settings-help">Les données métier actuelles seront remplacées. La configuration de l’interface et le mot de passe local seront conservés.</p>
+        <form class="backup-confirm-form" data-backup-confirm-form>
+          <label for="backup-confirmation">Saisissez RESTAURER pour confirmer</label>
+          <input class="input" id="backup-confirmation" name="confirmation" autocomplete="off" required>
+          <div class="actions">
+            <button class="button ghost" type="button" data-close>Annuler</button>
+            <button class="button danger" type="submit">Restaurer les données</button>
+          </div>
+        </form>
+      `,
+      onOpen(root) {
+        root.querySelector("[data-backup-confirm-form]").addEventListener("submit", (event) => {
+          event.preventDefault();
+          const confirmation = new FormData(event.currentTarget).get("confirmation");
+          if (String(confirmation || "").trim() !== "RESTAURER") {
+            window.HKUI.notify("Confirmation incorrecte. Aucune donnée modifiée.");
+            return;
+          }
+          try {
+            replaceBusinessData(report);
+            window.HKModal.close();
+            window.HKUI.notify("Sauvegarde restaurée avec succès.");
+            render();
+          } catch (error) {
+            window.HKUI.notify(`Restauration annulée : ${error.message}`);
+          }
+        });
+      }
+    });
+  }
+
+  async function importBackup(file) {
+    if (!file) {
+      window.HKUI.notify("Sélectionnez une sauvegarde JSON.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      window.HKUI.notify("La sauvegarde ne doit pas dépasser 10 Mo.");
+      return;
+    }
+    try {
+      const report = validateBackup(JSON.parse(await file.text()));
+      openRestorePreview(report);
+    } catch (error) {
+      window.HKUI.notify(`Sauvegarde invalide : ${error.message}`);
+    }
   }
 
   function openDataReset() {
@@ -489,6 +637,22 @@
           </div>
           <button class="button danger" type="button" data-reset-business-data>Réinitialiser les données métier</button>
         </article>
+
+        <article class="card panel backup-data-panel">
+          <div>
+            <span class="day-panel-label">Continuité des données</span>
+            <h2>Sauvegarder et restaurer</h2>
+            <p class="settings-help">Exportez les données métier dans un fichier JSON ou contrôlez une sauvegarde avant de la restaurer. Aucun remplacement n’est effectué sans aperçu et confirmation.</p>
+          </div>
+          <div class="backup-data-actions">
+            <button class="button primary" type="button" data-export-backup>Exporter une sauvegarde</button>
+            <label class="button ghost backup-file-field">
+              Choisir une sauvegarde JSON
+              <input type="file" accept="application/json,.json" data-backup-file>
+            </label>
+            <button class="button ghost" type="button" data-import-backup>Contrôler et restaurer</button>
+          </div>
+        </article>
       </section>
     `;
 
@@ -525,6 +689,10 @@
     workspace.querySelector("[data-lock-background]").addEventListener("change", (event) => saveLockBackground(event.target.files[0]));
     workspace.querySelector("[data-remove-lock-background]")?.addEventListener("click", removeLockBackground);
     workspace.querySelector("[data-reset-business-data]").addEventListener("click", openDataReset);
+    workspace.querySelector("[data-export-backup]").addEventListener("click", downloadBackup);
+    workspace.querySelector("[data-import-backup]").addEventListener("click", () => {
+      importBackup(workspace.querySelector("[data-backup-file]").files[0]);
+    });
   }
 
   window.HKSettings = { render };

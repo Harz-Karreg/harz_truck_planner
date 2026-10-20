@@ -44,6 +44,17 @@ npm run check
 
 Les tests protegent actuellement la presence des pages et collections historiques, la separation des trois modes et les options de securite essentielles de la fenetre Electron.
 
+### Sauvegarde locale
+
+Dans ADMIN, ouvrez **Parametres**, puis **Sauvegarder et restaurer** :
+
+- **Exporter une sauvegarde** telecharge un fichier JSON contenant les donnees metier ;
+- **Controler et restaurer** valide le fichier, affiche les volumes et les references incoherentes, puis exige la saisie de `RESTAURER` ;
+- la configuration d'interface et le mot de passe de verrouillage ne sont pas remplaces par une restauration ;
+- en cas d'erreur pendant le remplacement, l'application tente de remettre les donnees presentes avant l'import.
+
+Conservez les sauvegardes sur un support distinct du poste utilise par l'application.
+
 ## Packaging Windows
 
 Construction locale non installable :
