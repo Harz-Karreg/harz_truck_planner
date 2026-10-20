@@ -43,18 +43,14 @@
     return material.code ? `${material.code} — ${material.nom}` : material.nom;
   }
 
-  function materialOptions(route = {}) {
+  function materialOptions() {
     const options = repository("matieres").list()
       .slice()
       .sort((a, b) => materialDisplay(a).localeCompare(materialDisplay(b), "fr"))
       .map((material) => ({ value: material.id, label: materialDisplay(material) }));
 
-    if (!route.matiereId && route.description) {
-      options.unshift({ value: "__legacy__", label: `Ancienne saisie — ${route.description}` });
-    }
-
     return [
-      { value: "", label: "Sélectionner une matière" },
+      { value: "", label: "Choisir une matière enregistrée" },
       ...options
     ];
   }
@@ -81,10 +77,14 @@
   }
 
   function fields(route = {}) {
+    const defaultDeparture = route.depart || "9 Boulevard Monge, 69330 Meyzieu";
+    const addresses = repository("adresses").list();
     return [
       { name: "nom", label: "Nom", value: route.nom, required: true },
-      { name: "depart", label: "Départ", type: "select", value: route.depart || "9 Boulevard Monge, 69330 Meyzieu", options: addressOptions(route.depart || "9 Boulevard Monge, 69330 Meyzieu"), required: true },
-      { name: "arrivee", label: "Arrivée", type: "select", value: route.arrivee || "", options: addressOptions(route.arrivee), required: true },
+      { name: "departCarnet", label: "Départ enregistré", type: "select", value: addresses.some((item) => item.adresse === defaultDeparture) ? defaultDeparture : "", options: addressOptions(""), helpText: "Choisissez dans le carnet ou saisissez l’adresse ci-dessous." },
+      { name: "depart", label: "Adresse de départ", value: defaultDeparture, placeholder: "Saisir une adresse", required: true },
+      { name: "arriveeCarnet", label: "Arrivée enregistrée", type: "select", value: addresses.some((item) => item.adresse === route.arrivee) ? route.arrivee : "", options: addressOptions(""), helpText: "Choisissez dans le carnet ou saisissez l’adresse ci-dessous." },
+      { name: "arrivee", label: "Adresse d’arrivée", value: route.arrivee || "", placeholder: "Saisir une adresse", required: true },
       { name: "date", label: "Date", type: "date", value: route.date || new Date().toISOString().slice(0, 10), required: true },
       { name: "heure", label: "Heure de début", type: "time", value: route.heure || "08:00", required: true },
       { name: "heureFin", label: "Heure de fin", type: "time", value: route.heureFin || "" },
@@ -95,7 +95,9 @@
       { name: "benneId", label: "Benne", type: "select", value: route.benneId, options: binOptions() },
       { name: "statut", label: "Statut", type: "select", value: route.statut || "Planifiee", options: statusOptions },
       { name: "publicationStatut", label: "Publication", type: "select", value: route.publicationStatut || (route.id ? "Publiee" : "Brouillon"), options: publicationOptions },
-      { name: "matiereId", label: "Matière", type: "select", value: route.matiereId || (route.description ? "__legacy__" : ""), options: materialOptions(route), full: true }
+      { name: "matiereId", label: "Matière enregistrée", type: "select", value: route.matiereId || "", options: materialOptions() },
+      { name: "matiereLibre", label: "Matière libre", value: route.matiereId ? "" : (route.description || ""), placeholder: "Ex. cuivre, laiton, aluminium" },
+      { name: "consignes", label: "Consignes", value: route.consignes || "", maxlength: 80, placeholder: "Consignes courtes pour la tournée", helpText: "80 caractères maximum.", full: true }
     ];
   }
 
@@ -106,18 +108,29 @@
     window.HKModal.open({
       title: isExisting ? "Modifier la tournée" : "Ajouter une tournée",
       fields: fields(initialRoute),
+      onOpen(node) {
+        [["departCarnet", "depart"], ["arriveeCarnet", "arrivee"]].forEach(([selectName, inputName]) => {
+          const select = node.querySelector(`[name="${selectName}"]`);
+          const input = node.querySelector(`[name="${inputName}"]`);
+          select.addEventListener("change", () => { if (select.value) input.value = select.value; });
+          input.addEventListener("input", () => { if (input.value !== select.value) select.value = ""; });
+        });
+        const materialSelect = node.querySelector('[name="matiereId"]');
+        const materialInput = node.querySelector('[name="matiereLibre"]');
+        materialSelect.addEventListener("change", () => { if (materialSelect.value) materialInput.value = ""; });
+        materialInput.addEventListener("input", () => { if (materialInput.value.trim()) materialSelect.value = ""; });
+      },
       onSubmit(data) {
         if (data.journeeEntiere) {
           data.heure = "07:00";
           data.heureFin = "17:00";
         }
         const selectedMaterial = repository("matieres").list().find((material) => material.id === data.matiereId);
-        if (data.matiereId === "__legacy__") {
-          data.matiereId = "";
-          data.description = initialRoute.description || "";
-        } else {
-          data.description = selectedMaterial ? selectedMaterial.nom : "";
-        }
+        data.description = data.matiereLibre.trim() || (selectedMaterial ? selectedMaterial.nom : "");
+        data.consignes = data.consignes.trim().slice(0, 80);
+        delete data.departCarnet;
+        delete data.arriveeCarnet;
+        delete data.matiereLibre;
         if (isExisting) {
           repository("tournees").update(initialRoute.id, data);
         } else {
@@ -165,6 +178,7 @@
               <th>Benne</th>
               <th>Statut</th>
               <th>Publication</th>
+              <th>Consignes</th>
               <th></th>
             </tr>
           </thead>
@@ -187,6 +201,7 @@
                   <td>${bin ? bin.nom : "Sans benne"}</td>
                   <td><span class="badge">${window.HKUI.routeStatusLabel(route.statut)}</span></td>
                   <td><span class="badge ${route.publicationStatut === "Brouillon" ? "warning" : "success"}">${route.publicationStatut || "Publiée"}</span></td>
+                  <td>${route.consignes || "-"}</td>
                   <td class="actions">
                     <button class="icon-button" data-edit="${route.id}" aria-label="Modifier">✎</button>
                     <button class="icon-button" data-delete="${route.id}" aria-label="Supprimer">×</button>

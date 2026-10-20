@@ -29,6 +29,19 @@ test("la vue semaine permet de verrouiller l'écran", () => {
   assert.match(planning, /#screen-lock-button/);
 });
 
+test("une tournée accepte les adresses et matières libres avec des consignes courtes", () => {
+  const routes = fs.readFileSync(path.join(scripts, "tournees.js"), "utf8");
+  const modal = fs.readFileSync(path.join(scripts, "modal.js"), "utf8");
+
+  assert.match(routes, /name: "departCarnet"/);
+  assert.match(routes, /name: "depart"/);
+  assert.match(routes, /name: "arriveeCarnet"/);
+  assert.match(routes, /name: "matiereLibre"/);
+  assert.match(routes, /name: "consignes"[^\n]+maxlength: 80/);
+  assert.match(routes, /slice\(0, 80\)/);
+  assert.match(modal, /field\.maxlength/);
+});
+
 test("la remise a zero exige une confirmation et sauvegarde avant de vider", () => {
   const settings = fs.readFileSync(path.join(scripts, "settings.js"), "utf8");
   const resetFunction = settings.slice(settings.indexOf("function openDataReset()"), settings.indexOf("function render()"));

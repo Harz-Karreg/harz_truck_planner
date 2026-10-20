@@ -508,6 +508,7 @@
           <div class="route-week-name">${route.nom}</div>
           ${publicationStatus(route) === "Brouillon" ? '<span class="route-publication-badge">Brouillon</span>' : ""}
           ${routeMaterialLabel(route) ? `<div class="route-material">${escapeHtml(routeMaterialLabel(route))}</div>` : ""}
+          ${route.consignes ? `<div class="route-meta">Consigne : ${escapeHtml(route.consignes)}</div>` : ""}
           <div class="route-meta">${escapeHtml(routeTimeLabel(route))} · ${route.depart} -> ${route.arrivee}</div>
           ${trailer ? `<div class="route-meta">${trailerName(trailer)}</div>` : ""}
           ${truck ? `<div class="route-meta">${truckName(truck)}</div>` : ""}

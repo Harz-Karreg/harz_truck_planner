@@ -83,6 +83,13 @@
   font-weight: 760;
 }
 
+.field-help {
+  margin-top: -3px;
+  color: var(--muted-2);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;

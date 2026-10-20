@@ -26,8 +26,11 @@
     const value = field.value ?? "";
     const required = field.required ? "required" : "";
     const full = field.full ? " full" : "";
+    const maximum = field.maxlength ? `maxlength="${field.maxlength}"` : "";
+    const placeholder = field.placeholder ? `placeholder="${field.placeholder}"` : "";
+    const help = field.helpText ? `<small class="field-help">${field.helpText}</small>` : "";
     if (field.type === "textarea") {
-      return `<div class="field${full}"><label>${field.label}</label><textarea class="textarea" name="${field.name}" ${required}>${value}</textarea></div>`;
+      return `<div class="field${full}"><label>${field.label}</label><textarea class="textarea" name="${field.name}" ${maximum} ${placeholder} ${required}>${value}</textarea>${help}</div>`;
     }
     if (field.type === "select") {
       return `
@@ -36,6 +39,7 @@
           <select class="select" name="${field.name}" ${required}>
             ${(field.options || []).map((option) => `<option value="${option.value}" ${String(option.value) === String(value) ? "selected" : ""} ${option.disabled ? "disabled" : ""}>${option.label}</option>`).join("")}
           </select>
+          ${help}
         </div>`;
     }
     if (field.type === "checkbox") {
@@ -45,7 +49,7 @@
           <span class="checkbox-row"><input type="checkbox" name="${field.name}" ${value ? "checked" : ""}> ${field.help || "Actif"}</span>
         </div>`;
     }
-    return `<div class="field${full}"><label>${field.label}</label><input class="input" type="${field.type || "text"}" name="${field.name}" value="${value}" ${required}></div>`;
+    return `<div class="field${full}"><label>${field.label}</label><input class="input" type="${field.type || "text"}" name="${field.name}" value="${value}" ${maximum} ${placeholder} ${required}>${help}</div>`;
   }
 
   function collect(form) {
@@ -81,6 +85,7 @@
     `;
     node.classList.add("open");
     bindClose(node);
+    if (config.onOpen) config.onOpen(node);
     node.querySelector("form").addEventListener("submit", (event) => {
       event.preventDefault();
       const result = config.onSubmit(collect(event.currentTarget));
