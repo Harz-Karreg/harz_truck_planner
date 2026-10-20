@@ -23,8 +23,9 @@ test("la fenetre Electron isole le renderer", () => {
   assert.match(mainSource, /setWindowOpenHandler\(\(\) => \(\{ action: "deny" \}\)\)/);
 });
 
-test("le preload n'expose qu'une API de runtime en lecture seule", () => {
+test("le preload expose uniquement le runtime et la verification de mise a jour", () => {
   assert.match(preloadSource, /contextBridge\.exposeInMainWorld/);
   assert.match(preloadSource, /Object\.freeze/);
-  assert.doesNotMatch(preloadSource, /ipcRenderer/);
+  assert.match(preloadSource, /ipcRenderer\.invoke\("updates:check"\)/);
+  assert.doesNotMatch(preloadSource, /ipcRenderer\.(send|sendSync|on|once)/);
 });

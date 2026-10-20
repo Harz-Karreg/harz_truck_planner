@@ -77,6 +77,8 @@ Les installations Windows verifient automatiquement les nouvelles versions publi
 
 Une version telechargee est proposee au redemarrage. Si l'utilisateur choisit « Plus tard », elle est installee a la fermeture suivante de l'application. Les controles sont desactives avec `npm start` et ne fonctionnent que dans une application packagee.
 
+Dans ADMIN, le panneau **Parametres > Mises a jour** permet egalement de lancer une verification manuelle. Le bouton consulte uniquement les releases publiees et ne telecharge jamais directement les commits du depot source.
+
 Pour publier automatiquement une version :
 
 1. creer dans ce depot un secret GitHub Actions nomme `RELEASES_TOKEN`, limite au depot public de releases et autorise a gerer ses Releases ;

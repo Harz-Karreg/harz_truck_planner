@@ -403,6 +403,24 @@
   font-size: 0.78rem;
 }
 
+.update-settings-panel {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.update-settings-panel h2 {
+  margin: 8px 0 0;
+}
+
+.update-status {
+  margin: 10px 0 0;
+  color: var(--info);
+  font-size: 0.78rem;
+}
+
 .lock-background-file {
   position: relative;
   overflow: hidden;
@@ -539,7 +557,8 @@
 
   .lock-settings-panel,
   .reset-data-panel,
-  .backup-data-panel {
+  .backup-data-panel,
+  .update-settings-panel {
     grid-template-columns: 1fr;
   }
 }

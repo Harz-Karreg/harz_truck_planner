@@ -1,16 +1,38 @@
-const { app, dialog } = require("electron");
+const { app, dialog, ipcMain } = require("electron");
 const { autoUpdater } = require("electron-updater");
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 const INITIAL_CHECK_DELAY_MS = 10 * 1000;
 
-function checkForUpdates() {
-  autoUpdater.checkForUpdates().catch((error) => {
+let currentCheck = null;
+
+async function checkForUpdates() {
+  if (!app.isPackaged) {
+    return { status: "development", currentVersion: app.getVersion() };
+  }
+  if (currentCheck) return currentCheck;
+
+  currentCheck = autoUpdater.checkForUpdates()
+    .then((result) => ({
+      status: result?.updateInfo?.version && result.updateInfo.version !== app.getVersion() ? "available" : "up-to-date",
+      currentVersion: app.getVersion(),
+      availableVersion: result?.updateInfo?.version || app.getVersion()
+    }))
+    .catch((error) => {
     console.error("Echec de la verification des mises a jour :", error.message);
-  });
+      return { status: "error", currentVersion: app.getVersion(), message: error.message };
+    })
+    .finally(() => {
+      currentCheck = null;
+    });
+
+  return currentCheck;
 }
 
 function setupAutoUpdates(getMainWindow) {
+  ipcMain.removeHandler("updates:check");
+  ipcMain.handle("updates:check", () => checkForUpdates());
+
   if (!app.isPackaged) {
     console.info("Mises a jour automatiques desactivees en mode developpement.");
     return;
@@ -42,8 +64,8 @@ function setupAutoUpdates(getMainWindow) {
     if (result.response === 0) autoUpdater.quitAndInstall(false, true);
   });
 
-  const initialCheck = setTimeout(checkForUpdates, INITIAL_CHECK_DELAY_MS);
-  const recurringCheck = setInterval(checkForUpdates, CHECK_INTERVAL_MS);
+  const initialCheck = setTimeout(() => void checkForUpdates(), INITIAL_CHECK_DELAY_MS);
+  const recurringCheck = setInterval(() => void checkForUpdates(), CHECK_INTERVAL_MS);
   initialCheck.unref();
   recurringCheck.unref();
 }

@@ -475,6 +475,33 @@
     }
   }
 
+  async function checkDesktopUpdates(button, statusNode) {
+    const updater = window.harzKarregDesktop?.updates;
+    if (!updater) {
+      statusNode.textContent = "La vérification est disponible uniquement dans l’application Windows installée.";
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Vérification…";
+    statusNode.textContent = "Connexion au service de mises à jour HARZ KARREG…";
+    try {
+      const result = await updater.check();
+      const messages = {
+        development: `Mode développement — version ${result.currentVersion}. Installez l’application pour tester les mises à jour.`,
+        "up-to-date": `HARZ KARREG ${result.currentVersion} est à jour.`,
+        available: `La version ${result.availableVersion} est disponible et son téléchargement a commencé.`,
+        error: `Vérification impossible : ${result.message || "service indisponible"}.`
+      };
+      statusNode.textContent = messages[result.status] || "État de mise à jour inconnu.";
+    } catch (error) {
+      statusNode.textContent = `Vérification impossible : ${error.message}`;
+    } finally {
+      button.disabled = false;
+      button.textContent = "Rechercher une mise à jour";
+    }
+  }
+
   function openDataReset() {
     window.HKModal.open({
       title: "Réinitialiser les données métier",
@@ -653,6 +680,16 @@
             <button class="button ghost" type="button" data-import-backup>Contrôler et restaurer</button>
           </div>
         </article>
+
+        <article class="card panel update-settings-panel">
+          <div>
+            <span class="day-panel-label">Application desktop</span>
+            <h2>Mises à jour</h2>
+            <p class="settings-help">Recherche la dernière version validée dans le dépôt public de releases. Les commits du dépôt source ne sont jamais installés directement.</p>
+            <p class="update-status" data-update-status>${window.harzKarregDesktop ? "Prêt à vérifier les mises à jour." : "Disponible uniquement dans l’application Windows installée."}</p>
+          </div>
+          <button class="button primary" type="button" data-check-updates ${window.harzKarregDesktop ? "" : "disabled"}>Rechercher une mise à jour</button>
+        </article>
       </section>
     `;
 
@@ -692,6 +729,9 @@
     workspace.querySelector("[data-export-backup]").addEventListener("click", downloadBackup);
     workspace.querySelector("[data-import-backup]").addEventListener("click", () => {
       importBackup(workspace.querySelector("[data-backup-file]").files[0]);
+    });
+    workspace.querySelector("[data-check-updates]").addEventListener("click", (event) => {
+      checkDesktopUpdates(event.currentTarget, workspace.querySelector("[data-update-status]"));
     });
   }
 
