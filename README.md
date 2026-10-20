@@ -28,10 +28,10 @@ npm start
 La fenetre de demarrage propose trois interfaces :
 
 - ADMIN ouvre l'application de gestion existante ;
-- COMPANION ouvre la premiere structure de consultation en lecture seule ;
+- COMPANION affiche les tournées publiées dans un planning hebdomadaire en lecture seule, avec filtres, colonnes configurables, plein écran et actualisation automatique ;
 - DRIVER ouvre la premiere structure responsive du chauffeur.
 
-COMPANION et DRIVER n'affichent encore aucune donnee metier. La selection d'un mode ne cree aucun droit et ne remplace pas la future authentification.
+COMPANION lit uniquement les données publiées du stockage legacy en attendant le backend partagé. DRIVER n'affiche encore aucune donnée métier. La sélection d'un mode ne crée aucun droit et ne remplace pas la future authentification.
 
 L'application web historique reste utilisable independamment d'Electron. Ses donnees navigateur ne sont ni supprimees, ni importees automatiquement dans le profil Electron a ce stade.
 

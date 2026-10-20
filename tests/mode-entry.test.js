@@ -19,12 +19,22 @@ test("l'ecran de demarrage separe les trois modes", () => {
   assert.match(startup, /harz-karreg-webapp\/index\.html/);
 });
 
-test("Companion est presente comme une structure en lecture seule sans donnees", () => {
+test("Companion est une vue de planning en lecture seule", () => {
   const companion = read(path.join("companion", "index.html"));
 
   assert.match(companion, /lecture seule/i);
-  assert.match(companion, /Aucune donnée métier fictive/i);
+  assert.match(companion, /planning publié/i);
   assert.doesNotMatch(companion, /localStorage/);
+});
+
+test("le logo ramene au choix du mode depuis Admin, Companion et Driver", () => {
+  const companion = read(path.join("companion", "index.html"));
+  const driver = read(path.join("driver", "index.html"));
+  const adminUi = fs.readFileSync(path.join(root, "harz-karreg-webapp", "js", "ui.js"), "utf8");
+
+  assert.match(companion, /href="\.\.\/startup\/index\.html"[^>]+title="Changer de mode"/);
+  assert.match(driver, /class="mode-return-logo"[^>]+href="\.\.\/startup\/index\.html"[^>]+title="Changer de mode"/);
+  assert.match(adminUi, /href="\.\.\/src\/renderer\/startup\/index\.html"[^>]+title="Changer de mode"/);
 });
 
 test("Driver est presente comme une structure soumise aux permissions", () => {

@@ -3,25 +3,60 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <title>HARZ KARREG — Companion</title>
     <link rel="stylesheet" href="../shared/mode-shell.css">
+    <link rel="stylesheet" href="app.css">
+    <script src="../shared/legacy-read-service.js" defer></script>
+    <script src="app.js" defer></script>
   </head>
   <body>
-    <main class="placeholder-shell">
-      <section class="placeholder-panel">
-        <p class="placeholder-label">MODE COMPANION · STRUCTURE INITIALE</p>
-        <h1>Planning en lecture seule.</h1>
-        <p class="placeholder-lead">Cette interface accueillera les plannings hebdomadaires publiés et autorisés pour cet appareil.</p>
-        <ul class="placeholder-scope">
-          <li>Affichage plein écran 16:9</li>
-          <li>Filtres dépôt, véhicule, chauffeur et équipe</li>
-          <li>Colonnes configurables</li>
-          <li>Actualisation automatique</li>
-        </ul>
-        <p class="placeholder-note">Aucune donnée métier fictive n’est affichée. La connexion aux services partagés sera réalisée dans un incrément ultérieur.</p>
-        <a class="back-link" href="../startup/index.html">Changer de mode</a>
+    <main class="companion-shell">
+      <header class="companion-header">
+        <a class="companion-brand" href="../startup/index.html" aria-label="Retour au choix du mode" title="Changer de mode">
+          <span class="brand-mark">HK</span>
+          <span><strong>HARZ KARREG</strong><small>COMPANION · LECTURE SEULE</small></span>
+        </a>
+        <div class="header-title">
+          <p>PLANNING PUBLIÉ</p><h1>Vue hebdomadaire</h1><span id="week-range">Chargement de la semaine…</span>
+        </div>
+        <div class="header-actions">
+          <span class="sync-status" id="sync-status" aria-live="polite">Actualisation…</span>
+          <button class="icon-button" id="refresh-button" type="button" title="Actualiser" aria-label="Actualiser">↻</button>
+          <button class="screen-button" id="fullscreen-button" type="button">Plein écran</button>
+        </div>
+      </header>
+      <section class="control-bar" aria-label="Filtres du planning">
+        <div class="week-navigation">
+          <button type="button" id="previous-week" aria-label="Semaine précédente">←</button>
+          <button type="button" id="current-week">Aujourd’hui</button>
+          <button type="button" id="next-week" aria-label="Semaine suivante">→</button>
+        </div>
+        <label><span>DÉPART</span><select id="departure-filter"><option value="">Tous les départs</option></select></label>
+        <label><span>CHAUFFEUR</span><select id="driver-filter"><option value="">Tous les chauffeurs</option></select></label>
+        <label><span>VÉHICULE</span><select id="truck-filter"><option value="">Tous les véhicules</option></select></label>
+        <details class="column-picker">
+          <summary>Colonnes</summary>
+          <div>
+            <label><input type="checkbox" value="driver" checked> Chauffeur</label>
+            <label><input type="checkbox" value="route" checked> Tournée</label>
+            <label><input type="checkbox" value="material" checked> Matière</label>
+            <label><input type="checkbox" value="vehicle" checked> Véhicule</label>
+            <label><input type="checkbox" value="trailer" checked> Remorque</label>
+          </div>
+        </details>
       </section>
+      <section class="planning-frame" aria-live="polite">
+        <div class="planning-grid" id="planning-grid"></div>
+        <div class="empty-state" id="empty-state" hidden>
+          <span>HK</span><h2>Aucune tournée publiée</h2>
+          <p>Les tournées apparaîtront ici après publication de la semaine par un administrateur.</p>
+        </div>
+      </section>
+      <footer class="companion-footer">
+        <span>HARZ KARREG 2026</span>
+        <span><strong>DRIVE BEYOND.</strong> Augmented Intelligence for Smarter Mobility.</span>
+      </footer>
     </main>
   </body>
 </html>

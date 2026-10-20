@@ -220,7 +220,7 @@
     return `
       <div class="app-layout${collapsed ? " sidebar-collapsed" : ""}">
         <aside class="sidebar">
-          <a class="brand" href="index.html" aria-label="Harz Karreg">
+          <a class="brand" href="../src/renderer/startup/index.html" aria-label="Retour au choix du mode" title="Changer de mode">
             ${brandMark}
             <span class="brand-copy">
               <strong class="brand-title">Harz Karreg</strong>
