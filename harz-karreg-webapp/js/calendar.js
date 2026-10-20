@@ -57,5 +57,21 @@
     return weeks;
   }
 
-  window.HKCalendar = { currentWeek, weeksUntilDecember };
+  function pastWeeks(count = 52) {
+    const weeks = [];
+    for (let offset = -1; offset >= -count; offset -= 1) {
+      const week = currentWeek(offset);
+      weeks.push({
+        offset,
+        number: weekNumber(new Date(`${week[0].iso}T12:00:00`)),
+        year: new Date(`${week[0].iso}T12:00:00`).getFullYear(),
+        label: `Semaine ${String(weekNumber(new Date(`${week[0].iso}T12:00:00`))).padStart(2, "0")}`,
+        range: `${week[0].label} - ${week[6].label}`,
+        weekStart: week[0].iso
+      });
+    }
+    return weeks;
+  }
+
+  window.HKCalendar = { currentWeek, pastWeeks, weeksUntilDecember };
 })();

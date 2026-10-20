@@ -52,16 +52,17 @@ a {
 }
 
 .topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  position: relative;
+  z-index: 1;
   display: flex;
   min-height: var(--topbar);
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  margin: 0;
   padding: 12px 0 22px;
-  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(143, 154, 170, 0.08);
+  background: transparent;
 }
 
 .eyebrow {
@@ -108,10 +109,49 @@ a {
 }
 
 .footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: auto;
   padding: 34px 0 8px;
   color: var(--muted-2);
   font-size: 0.82rem;
+}
+
+.footer strong {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.footer-signature {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 12px;
+  text-align: right;
+}
+
+.footer-signature span,
+.footer-copyright {
+  opacity: 0.72;
+}
+
+@media (max-width: 620px) {
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .footer-signature {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+  }
 }
 
 .button {
@@ -314,7 +354,6 @@ td.actions > * + * {
   }
 
   .topbar {
-    position: static;
     align-items: flex-start;
     flex-direction: column;
   }

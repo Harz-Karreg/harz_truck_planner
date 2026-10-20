@@ -238,6 +238,91 @@
   background: rgba(18, 24, 33, 0.54);
 }
 
+.week-archives-modal {
+  width: min(760px, calc(100vw - 28px));
+  max-height: min(780px, calc(100vh - 28px));
+}
+
+.week-archive-list {
+  display: grid;
+  gap: 7px;
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+  margin: 0 14px 14px;
+  padding-right: 4px;
+}
+
+.week-archive-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.week-archive-toolbar > label:first-child {
+  display: grid;
+  min-width: 130px;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.archive-select-all {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: auto;
+  padding-bottom: 9px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.week-archive-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 7px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.archive-week-checkbox {
+  width: 16px;
+  height: 16px;
+  margin-left: 5px;
+  accent-color: var(--accent);
+}
+
+.week-archive-row.active {
+  border-color: rgba(214, 255, 63, 0.55);
+  background: rgba(214, 255, 63, 0.08);
+}
+
+.week-archive-row > [data-archive-week] {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 42px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.week-archive-row span,
+.week-archive-row small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .week-card {
   position: relative;
   display: block;

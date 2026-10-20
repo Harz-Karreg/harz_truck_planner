@@ -284,7 +284,13 @@
             <div class="toolbar" id="page-actions"></div>
           </header>
           <section class="workspace" id="workspace"></section>
-          <footer class="footer">Harz Karreg MVP - application locale sans backend.</footer>
+          <footer class="footer">
+            <span class="footer-copyright">Harz Karreg 2026</span>
+            <div class="footer-signature">
+              <strong>DRIVE BEYOND.</strong>
+              <span>Augmented Intelligence for Smarter Mobility.</span>
+            </div>
+          </footer>
         </main>
       </div>
     `;

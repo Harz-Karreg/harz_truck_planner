@@ -265,62 +265,201 @@
     `;
   }
 
+  function asciiText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[–—]/g, "-")
+      .replace(/→/g, "->")
+      .replace(/[^\x20-\x7E]/g, "");
+  }
+
+  function safeFileName(value) {
+    return asciiText(value).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "planning";
+  }
+
+  function downloadBlob(data, fileName) {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: fileName.endsWith(".zip") ? "application/zip" : "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function wrapPdfLine(value, limit = 88) {
+    const words = asciiText(value).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = "";
+    words.forEach((word) => {
+      if (`${line} ${word}`.trim().length > limit && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = `${line} ${word}`.trim();
+      }
+    });
+    if (line || !lines.length) lines.push(line);
+    return lines;
+  }
+
+  function createPdf(lines) {
+    const escapedLines = lines.flatMap((line) => wrapPdfLine(line));
+    const pages = [];
+    for (let index = 0; index < escapedLines.length; index += 48) pages.push(escapedLines.slice(index, index + 48));
+    if (!pages.length) pages.push(["Aucune donnee."]);
+
+    const objects = [];
+    const pageRefs = pages.map((_, index) => `${4 + (index * 2)} 0 R`).join(" ");
+    objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+    objects[2] = `<< /Type /Pages /Kids [${pageRefs}] /Count ${pages.length} >>`;
+    objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+    pages.forEach((pageLines, index) => {
+      const pageId = 4 + (index * 2);
+      const contentId = pageId + 1;
+      const commands = pageLines.map((line) => {
+        const escaped = asciiText(line).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+        return `(${escaped}) Tj 0 -15 Td`;
+      }).join("\n");
+      const stream = `BT /F1 10 Tf 42 800 Td\n${commands}\nET`;
+      objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`;
+      objects[contentId] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+    });
+
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+    for (let id = 1; id < objects.length; id += 1) {
+      offsets[id] = pdf.length;
+      pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+    }
+    const xrefOffset = pdf.length;
+    pdf += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+    for (let id = 1; id < objects.length; id += 1) pdf += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
+    pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return new TextEncoder().encode(pdf).buffer;
+  }
+
+  function createRoutesPdf(title, routes, drivers, trailers, trucks, bins) {
+    const lines = [title, `${routes.length} tournee(s)`, ""];
+    routes.forEach((route, index) => {
+      const driver = drivers.find((item) => item.id === route.conducteurId);
+      const trailer = trailers.find((item) => item.id === route.remorqueId);
+      const truck = trucks.find((item) => item.id === route.camionId);
+      const bin = bins.find((item) => item.id === route.benneId);
+      lines.push(`${index + 1}. ${route.nom} | ${routeMaterialLabel(route) || "Matiere non renseignee"}`);
+      lines.push(`${route.date} ${routeTimeLabel(route)} | Chauffeur: ${driverName(driver)}`);
+      lines.push(`Trajet: ${route.depart} -> ${route.arrivee}`);
+      lines.push(`Camion: ${truckName(truck)} | Semi-remorque: ${trailerName(trailer)} | Benne: ${binName(bin)}`);
+      lines.push(`Statut: ${window.HKUI.routeStatusLabel(route.statut)}`, "");
+    });
+    if (!routes.length) lines.push("Aucune tournee enregistree.");
+    return createPdf(lines);
+  }
+
+  function weekNumberFromDate(isoDate) {
+    const date = new Date(`${isoDate}T12:00:00Z`);
+    const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const day = target.getUTCDay() || 7;
+    target.setUTCDate(target.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+    return Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+  }
+
+  function crc32(data) {
+    let crc = 0xFFFFFFFF;
+    for (let index = 0; index < data.length; index += 1) {
+      crc ^= data[index];
+      for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ ((crc & 1) ? 0xEDB88320 : 0);
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function zipHeader(values) {
+    const bytes = new Uint8Array(values.length * 2);
+    const view = new DataView(bytes.buffer);
+    values.forEach((value, index) => view.setUint16(index * 2, value, true));
+    return bytes;
+  }
+
+  function uint32(value) {
+    const bytes = new Uint8Array(4);
+    new DataView(bytes.buffer).setUint32(0, value >>> 0, true);
+    return bytes;
+  }
+
+  function concatBytes(parts) {
+    const output = new Uint8Array(parts.reduce((size, part) => size + part.length, 0));
+    let offset = 0;
+    parts.forEach((part) => { output.set(part, offset); offset += part.length; });
+    return output;
+  }
+
+  function createZip(files) {
+    const encoder = new TextEncoder();
+    const localParts = [];
+    const centralParts = [];
+    let localOffset = 0;
+    files.forEach((file) => {
+      const name = encoder.encode(file.name);
+      const data = file.data;
+      const crc = crc32(data);
+      const local = concatBytes([
+        uint32(0x04034B50), zipHeader([20, 0, 0, 0, 0]), uint32(crc), uint32(data.length), uint32(data.length), zipHeader([name.length, 0]), name, data
+      ]);
+      const central = concatBytes([
+        uint32(0x02014B50), zipHeader([20, 20, 0, 0, 0, 0]), uint32(crc), uint32(data.length), uint32(data.length), zipHeader([name.length, 0, 0, 0, 0]), uint32(0), uint32(localOffset), name
+      ]);
+      localParts.push(local);
+      centralParts.push(central);
+      localOffset += local.length;
+    });
+    const central = concatBytes(centralParts);
+    const end = concatBytes([
+      uint32(0x06054B50), zipHeader([0, 0, files.length, files.length]), uint32(central.length), uint32(localOffset), zipHeader([0])
+    ]);
+    return new Blob([...localParts, central, end], { type: "application/zip" });
+  }
+
   function exportRoutesPdf(title, routes) {
     const drivers = window.HKStorage.load("conducteurs");
     const trailers = window.HKStorage.load("remorques");
     const trucks = window.HKStorage.load("camions");
     const bins = window.HKStorage.load("bennes");
     const sortedRoutes = routes.slice().sort((a, b) => `${a.date} ${a.heure}`.localeCompare(`${b.date} ${b.heure}`));
-    const printWindow = window.open("", "_blank");
+    const pdf = createRoutesPdf(title, sortedRoutes, drivers, trailers, trucks, bins);
+    downloadBlob(pdf, `${safeFileName(title)}.pdf`);
+    window.HKUI.notify("PDF téléchargé.");
+  }
 
-    if (!printWindow) {
-      window.HKUI.notify("Export bloqué par le navigateur.");
+  function exportArchivedWeeksPdf(offsets) {
+    const drivers = window.HKStorage.load("conducteurs");
+    const trailers = window.HKStorage.load("remorques");
+    const trucks = window.HKStorage.load("camions");
+    const bins = window.HKStorage.load("bennes");
+    const allRoutes = window.HKStorage.load("tournees");
+    const files = offsets.map((offset) => {
+      const days = window.HKCalendar.currentWeek(offset);
+      const dates = days.map((day) => day.iso);
+      const routes = allRoutes
+        .filter((route) => dates.includes(route.date))
+        .sort((a, b) => `${a.date} ${a.heure}`.localeCompare(`${b.date} ${b.heure}`));
+      const year = new Date(`${days[0].iso}T12:00:00`).getFullYear();
+      const title = `Planning S${String(weekNumberFromDate(days[0].iso)).padStart(2, "0")} ${year} - ${days[0].label} au ${days[6].label}`;
+      return {
+        name: `${safeFileName(title)}.pdf`,
+        data: new Uint8Array(createRoutesPdf(title, routes, drivers, trailers, trucks, bins))
+      };
+    });
+    if (files.length === 1) {
+      downloadBlob(files[0].data.buffer, files[0].name);
+      window.HKUI.notify("PDF téléchargé.");
       return;
     }
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html lang="fr">
-        <head>
-          <meta charset="utf-8">
-          <title>${escapeHtml(title)}</title>
-          <style>
-            body { margin: 28px; color: #111827; font-family: Inter, Arial, sans-serif; }
-            h1 { margin: 0 0 8px; font-size: 24px; }
-            p { margin: 0 0 22px; color: #5b6472; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th { padding: 10px 8px; border-bottom: 2px solid #111827; text-align: left; text-transform: uppercase; }
-            td { padding: 10px 8px; border-bottom: 1px solid #d8dde6; vertical-align: top; }
-            span { color: #647083; }
-            @media print { body { margin: 18mm; } }
-          </style>
-        </head>
-        <body>
-          <h1>${escapeHtml(title)}</h1>
-          <p>${sortedRoutes.length} tournée(s)</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Tournée</th>
-                <th>Date / heure</th>
-                <th>Trajet</th>
-                <th>Chauffeur</th>
-                <th>Remorque</th>
-                <th>Camion</th>
-                <th>Benne</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sortedRoutes.length ? sortedRoutes.map((route) => routeSummary(route, drivers, trailers, trucks, bins)).join("") : '<tr><td colspan="8">Aucune tournée.</td></tr>'}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 250);
+    downloadBlob(createZip(files), `archives-plannings-${new Date().toISOString().slice(0, 10)}.zip`);
+    window.HKUI.notify(`${files.length} PDF téléchargés dans une archive ZIP.`);
   }
 
   function routeCard(route, drivers, trailers, trucks, bins, days, position = {}) {
@@ -942,6 +1081,96 @@
     });
   }
 
+  function openWeekArchives() {
+    const archives = window.HKCalendar.pastWeeks(52);
+    const routes = window.HKStorage.load("tournees");
+    const years = [...new Set(archives.map((week) => week.year))];
+    window.HKModal.openContent({
+      title: "Archives des plannings",
+      eyebrow: "52 dernières semaines",
+      className: "week-archives-modal",
+      content: `
+        <div class="week-archive-toolbar">
+          <label>Année
+            <select class="select" data-archive-year>
+              <option value="all">Toutes</option>
+              ${years.map((year) => `<option value="${year}">${year}</option>`).join("")}
+            </select>
+          </label>
+          <label class="archive-select-all"><input type="checkbox" data-archive-select-all> Tout sélectionner</label>
+          <button class="button primary" type="button" data-export-archives>Exporter <span data-archive-selection-count>0</span> semaine(s)</button>
+        </div>
+        <div class="week-archive-list">
+          ${archives.map((week) => {
+            const days = window.HKCalendar.currentWeek(week.offset);
+            const dates = days.map((day) => day.iso);
+            const routeCount = routes.filter((route) => dates.includes(route.date)).length;
+            return `
+              <div class="week-archive-row ${week.offset === selectedWeekOffset ? "active" : ""}" data-archive-row data-archive-year-value="${week.year}">
+                <input class="archive-week-checkbox" type="checkbox" value="${week.offset}" aria-label="Sélectionner la semaine ${week.number} de ${week.year}">
+                <button type="button" data-archive-week="${week.offset}">
+                  <strong>S${String(week.number).padStart(2, "0")} · ${week.year}</strong>
+                  <span>${week.range}</span>
+                  <small>${routeCount} tournée${routeCount === 1 ? "" : "s"}</small>
+                </button>
+                <button class="pdf-icon-button" type="button" data-archive-pdf="${week.offset}" aria-label="Exporter cette semaine en PDF">PDF</button>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `,
+      onOpen(node) {
+        const rows = [...node.querySelectorAll("[data-archive-row]")];
+        const selectAll = node.querySelector("[data-archive-select-all]");
+        const updateCount = () => {
+          const count = node.querySelectorAll(".archive-week-checkbox:checked").length;
+          node.querySelector("[data-archive-selection-count]").textContent = count;
+        };
+        node.querySelector("[data-archive-year]").addEventListener("change", (event) => {
+          rows.forEach((row) => {
+            row.hidden = event.target.value !== "all" && row.dataset.archiveYearValue !== event.target.value;
+          });
+          selectAll.checked = false;
+        });
+        selectAll.addEventListener("change", () => {
+          rows.filter((row) => !row.hidden).forEach((row) => {
+            row.querySelector(".archive-week-checkbox").checked = selectAll.checked;
+          });
+          updateCount();
+        });
+        node.querySelectorAll(".archive-week-checkbox").forEach((checkbox) => checkbox.addEventListener("change", updateCount));
+        node.querySelector("[data-export-archives]").addEventListener("click", () => {
+          const offsets = [...node.querySelectorAll(".archive-week-checkbox:checked")].map((checkbox) => Number(checkbox.value));
+          if (!offsets.length) {
+            window.HKUI.notify("Sélectionnez au moins une semaine à exporter.");
+            return;
+          }
+          exportArchivedWeeksPdf(offsets);
+        });
+        node.querySelectorAll("[data-archive-week]").forEach((button) => {
+          button.addEventListener("click", () => {
+            selectedWeekOffset = Number(button.dataset.archiveWeek);
+            window.HKModal.close();
+            render();
+          });
+        });
+        node.querySelectorAll("[data-archive-pdf]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const offset = Number(button.dataset.archivePdf);
+            const days = window.HKCalendar.currentWeek(offset);
+            const dates = days.map((day) => day.iso);
+            const weekRoutes = routes.filter((route) => dates.includes(route.date));
+            exportRoutesPdf(`Archive · ${days[0].label} - ${days[6].label}`, weekRoutes);
+          });
+        });
+      }
+    });
+  }
+
+  function bindWeekArchives() {
+    document.querySelector("[data-open-archives]")?.addEventListener("click", openWeekArchives);
+  }
+
   function renderWeekCards(weekOptions) {
     return `
       <div class="week-card-grid" aria-label="Semaines du calendrier">
@@ -1063,8 +1292,11 @@
 
     const workspace = document.querySelector("#workspace");
     const weekOptions = window.HKCalendar.weeksUntilDecember();
+    const archiveOptions = window.HKCalendar.pastWeeks(52);
     const days = window.HKCalendar.currentWeek(selectedWeekOffset);
-    const currentOption = weekOptions.find((week) => week.offset === selectedWeekOffset) || weekOptions[1];
+    const currentOption = weekOptions.find((week) => week.offset === selectedWeekOffset)
+      || archiveOptions.find((week) => week.offset === selectedWeekOffset)
+      || weekOptions[1];
     const drivers = window.HKStorage.load("conducteurs");
     const trailers = window.HKStorage.load("remorques");
     const trucks = window.HKStorage.load("camions");
@@ -1080,7 +1312,10 @@
           <h2>${currentOption.label}</h2>
           <span class="tag">${days[0].label} - ${days[6].label}</span>
         </div>
-        <button class="button ghost" type="button" data-open-week>Vue semaine</button>
+        <div class="actions">
+          <button class="button ghost" type="button" data-open-archives>Archives</button>
+          <button class="button ghost" type="button" data-open-week>Vue semaine</button>
+        </div>
       </div>
       ${planningModeControls(configuration)}
       ${renderWeekCards(weekOptions)}
@@ -1109,6 +1344,7 @@
     bindExportControls(days);
     bindDayViews(days, drivers, trailers, trucks, bins);
     bindWeekView(days, drivers, trailers, trucks, bins);
+    bindWeekArchives();
     bindDrag();
     bindBoardScrollbars();
     bindPlanningModeControls(configuration, days, drivers, trailers, trucks, bins);

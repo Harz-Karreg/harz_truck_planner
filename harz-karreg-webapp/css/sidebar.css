@@ -1,6 +1,7 @@
 .sidebar {
   position: sticky;
   top: 0;
+  z-index: 30;
   display: flex;
   min-width: 0;
   height: 100vh;
@@ -319,7 +320,7 @@
   position: absolute;
   top: 34px;
   right: -15px;
-  z-index: 2;
+  z-index: 31;
   display: grid;
   width: 30px;
   height: 30px;
