@@ -1,6 +1,6 @@
 {
   "name": "harz-karreg-desktop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Plateforme desktop de planification transport HARZ KARREG",
   "author": "HARZ KARREG",
@@ -12,7 +12,11 @@
     "test": "node --test",
     "check": "node scripts/check-js.js",
     "pack:win": "electron-builder --win --dir",
-    "dist:win": "electron-builder --win nsis"
+    "dist:win": "electron-builder --win nsis",
+    "release:win": "electron-builder --win nsis --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9"
   },
   "devDependencies": {
     "electron": "38.8.6",
@@ -22,6 +26,14 @@
     "appId": "com.harzkarreg.planner",
     "productName": "HARZ KARREG",
     "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Harz-Karreg",
+        "repo": "harz_truck_planner-releases",
+        "releaseType": "release"
+      }
+    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -51,5 +63,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "HARZ KARREG"
     }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9"
   }
 }

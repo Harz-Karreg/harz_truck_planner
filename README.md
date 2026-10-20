@@ -60,6 +60,21 @@ npm run dist:win
 
 Les fichiers generes sont places dans `dist/`. Les versions de developpement ne sont pas signees. La signature de production sera activee lorsqu'un certificat sera disponible.
 
+## Mises a jour automatiques
+
+Les installations Windows verifient automatiquement les nouvelles versions publiees dans le depot public [`Harz-Karreg/harz_truck_planner-releases`](https://github.com/Harz-Karreg/harz_truck_planner-releases). Le code source reste dans ce depot prive et aucun token GitHub n'est integre a l'application.
+
+Une version telechargee est proposee au redemarrage. Si l'utilisateur choisit « Plus tard », elle est installee a la fermeture suivante de l'application. Les controles sont desactives avec `npm start` et ne fonctionnent que dans une application packagee.
+
+Pour publier automatiquement une version :
+
+1. creer dans ce depot un secret GitHub Actions nomme `RELEASES_TOKEN`, limite au depot public de releases et autorise a gerer ses Releases ;
+2. mettre a jour `version` dans `package.json` et executer les tests ;
+3. committer et pousser les changements ;
+4. creer et pousser le tag correspondant, par exemple `v0.3.0`.
+
+Le workflow `.github/workflows/release-windows.yml` construit alors l'installateur, `latest.yml` et le fichier blockmap, puis les publie dans le depot public. En attendant la mise en place d'un certificat, les versions restent non signees et peuvent declencher un avertissement Windows SmartScreen.
+
 ## Contraintes
 
 - HTML5, CSS3 et JavaScript ES6.

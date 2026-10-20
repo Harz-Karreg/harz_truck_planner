@@ -1,6 +1,7 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("node:path");
 const { fileURLToPath } = require("node:url");
+const { setupAutoUpdates } = require("./updater");
 
 const applicationRoot = path.resolve(__dirname, "..", "..");
 const startupPage = path.join(applicationRoot, "src", "renderer", "startup", "index.html");
@@ -67,7 +68,9 @@ if (!hasApplicationLock) {
   });
 
   app.whenReady().then(() => {
+    app.setAppUserModelId("com.harzkarreg.planner");
     createMainWindow();
+    setupAutoUpdates(() => mainWindow);
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
     });
