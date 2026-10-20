@@ -10,8 +10,16 @@
   }
 
   function close() {
-    root().classList.remove("open");
-    root().innerHTML = "";
+    const node = root();
+    node.className = "modal-root";
+    node.innerHTML = "";
+  }
+
+  function bindClose(node) {
+    node.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", close));
+    node.onclick = (event) => {
+      if (event.target === node) close();
+    };
   }
 
   function fieldTemplate(field) {
@@ -55,6 +63,7 @@
 
   function open(config) {
     const node = root();
+    node.className = "modal-root";
     node.innerHTML = `
       <form class="modal">
         <div class="modal-header">
@@ -71,10 +80,7 @@
       </form>
     `;
     node.classList.add("open");
-    node.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", close));
-    node.addEventListener("click", (event) => {
-      if (event.target === node) close();
-    }, { once: true });
+    bindClose(node);
     node.querySelector("form").addEventListener("submit", (event) => {
       event.preventDefault();
       config.onSubmit(collect(event.currentTarget));
@@ -82,5 +88,26 @@
     });
   }
 
-  window.HKModal = { close, open };
+  function openContent(config) {
+    const node = root();
+    node.className = "modal-root";
+    if (config.rootClass) node.classList.add(config.rootClass);
+    node.innerHTML = `
+      <section class="modal modal-content ${config.className || ""}" role="dialog" aria-modal="true" aria-label="${config.title}">
+        <div class="modal-header">
+          <div>
+            ${config.eyebrow ? `<p class="modal-eyebrow">${config.eyebrow}</p>` : ""}
+            <h3>${config.title}</h3>
+          </div>
+          <button class="icon-button" type="button" data-close aria-label="Fermer">×</button>
+        </div>
+        <div class="modal-custom-body">${config.content}</div>
+      </section>
+    `;
+    node.classList.add("open");
+    bindClose(node);
+    if (config.onOpen) config.onOpen(node);
+  }
+
+  window.HKModal = { close, open, openContent };
 })();

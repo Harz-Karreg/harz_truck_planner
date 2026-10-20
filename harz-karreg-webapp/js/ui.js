@@ -18,7 +18,7 @@
     { page: "bennes", label: "Bennes", href: "bennes.html" },
     { page: "remorques", label: "Remorques", href: "remorques.html" },
     { page: "tournees", label: "Tournées", href: "tournees.html" },
-    { page: "settings", label: "Paramètres", href: "#" }
+    { page: "settings", label: "Paramètres", href: "settings.html" }
   ];
 
   const pageCopy = {
@@ -56,6 +56,11 @@
       eyebrow: "Execution terrain",
       title: "Tournées",
       subtitle: "Creation et suivi des missions. Chaque tournée datée apparait dans le planning."
+    },
+    settings: {
+      eyebrow: "Référentiels locaux",
+      title: "Paramètres",
+      subtitle: "Gérez les matières proposées lors de la création des tournées et importez votre référentiel CSV."
     }
   };
 
@@ -128,6 +133,60 @@
     }
   }
 
+  function displaySettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("hk-display-settings") || "{}");
+      return {
+        zoom: Math.min(Math.max(Number(saved.zoom) || 1, 0.8), 1.2),
+        fontSize: Math.min(Math.max(Number(saved.fontSize) || 16, 14), 20)
+      };
+    } catch (_error) {
+      return { zoom: 1, fontSize: 16 };
+    }
+  }
+
+  function applyDisplaySettings(settings) {
+    document.documentElement.style.setProperty("--ui-zoom", String(settings.zoom));
+    document.documentElement.style.setProperty("--ui-font-size", `${settings.fontSize}px`);
+    document.querySelector("[data-display-value='zoom']")?.replaceChildren(`${Math.round(settings.zoom * 100)}%`);
+    document.querySelector("[data-display-value='font']")?.replaceChildren(`${settings.fontSize}px`);
+    try {
+      localStorage.setItem("hk-display-settings", JSON.stringify(settings));
+    } catch (_error) {
+      // Les réglages restent actifs pour la session si le stockage est indisponible.
+    }
+  }
+
+  function initDisplayControls() {
+    let settings = displaySettings();
+    applyDisplaySettings(settings);
+    const menu = document.querySelector(".interface-menu");
+    const menuButton = document.querySelector("#interface-settings-button");
+
+    menuButton?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const open = menu.classList.toggle("open");
+      menuButton.setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", (event) => {
+      if (!menu?.contains(event.target)) {
+        menu?.classList.remove("open");
+        menuButton?.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.querySelectorAll("[data-display-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.displayAction;
+        if (action === "zoom-out") settings.zoom = Math.max(0.8, Number((settings.zoom - 0.1).toFixed(1)));
+        if (action === "zoom-in") settings.zoom = Math.min(1.2, Number((settings.zoom + 0.1).toFixed(1)));
+        if (action === "font-down") settings.fontSize = Math.max(14, settings.fontSize - 1);
+        if (action === "font-up") settings.fontSize = Math.min(20, settings.fontSize + 1);
+        applyDisplaySettings(settings);
+      });
+    });
+  }
+
   function initSidebar() {
     const layout = document.querySelector(".app-layout");
     const toggle = document.querySelector("#sidebar-toggle");
@@ -154,11 +213,15 @@
     const copy = pageCopy[page] || pageCopy.planning;
     const currentFile = location.pathname.split("/").pop() || "index.html";
     const collapsed = sidebarCollapsed();
+    const configuration = window.HKStorage.load("configuration")[0] || {};
+    const brandMark = configuration.logo
+      ? `<span class="brand-mark brand-mark-image"><img src="${configuration.logo}" alt="Logo Harz Karreg"></span>`
+      : '<span class="brand-mark">HK</span>';
     return `
       <div class="app-layout${collapsed ? " sidebar-collapsed" : ""}">
         <aside class="sidebar">
           <a class="brand" href="index.html" aria-label="Harz Karreg">
-            <span class="brand-mark">HK</span>
+            ${brandMark}
             <span class="brand-copy">
               <strong class="brand-title">Harz Karreg</strong>
               <span class="brand-subtitle">Local fleet intelligence</span>
@@ -168,7 +231,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg>
           </button>
           <nav class="nav" aria-label="Navigation principale">
-            ${nav.map((item) => `
+            ${nav.filter((item) => item.page !== "settings").map((item) => `
               <a class="nav-link ${item.href === currentFile || (currentFile === "" && item.href === "index.html") ? "active" : ""}" href="${item.href}" title="${item.label}">
                 <span class="nav-icon" aria-hidden="true">${icons[item.page]}</span>
                 <span class="nav-label">${item.label}</span>
@@ -177,6 +240,38 @@
           <div class="side-panel">
             <strong>Local first</strong>
             <p>Données persistées dans le navigateur. Aucun serveur, aucune base externe.</p>
+          </div>
+          <div class="sidebar-tools">
+            <a class="sidebar-tool-button ${page === "settings" ? "active" : ""}" href="settings.html" title="Paramètres">
+              ${icons.settings}<span class="sidebar-tool-label">Paramètres</span>
+            </a>
+            <button class="sidebar-tool-button sidebar-screen-lock" id="screen-lock-button" type="button" aria-label="Verrouiller l’écran" title="Verrouiller l’écran">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.8"/></svg>
+              <span class="sidebar-tool-label">Verrouiller</span>
+            </button>
+            <div class="interface-menu">
+              <button class="sidebar-tool-button" id="interface-settings-button" type="button" aria-expanded="false" aria-label="Réglages de l’interface" title="Réglages de l’interface">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M7 14v6"/></svg>
+                <span class="sidebar-tool-label">Interface</span>
+              </button>
+              <div class="interface-popover">
+                <strong>Réglages de l’interface</strong>
+                <div class="display-controls" aria-label="Réglages d’affichage">
+                  <div class="display-control-row">
+                    <span class="display-control-label">Zoom</span>
+                    <button type="button" data-display-action="zoom-out" aria-label="Dézoomer" title="Dézoomer">−</button>
+                    <output data-display-value="zoom">100%</output>
+                    <button type="button" data-display-action="zoom-in" aria-label="Zoomer" title="Zoomer">+</button>
+                  </div>
+                  <div class="display-control-row">
+                    <span class="display-control-label">Texte</span>
+                    <button type="button" data-display-action="font-down" aria-label="Réduire la taille du texte" title="Réduire le texte">A−</button>
+                    <output data-display-value="font">16px</output>
+                    <button type="button" data-display-action="font-up" aria-label="Augmenter la taille du texte" title="Agrandir le texte">A+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
         <main class="main-frame">
@@ -193,6 +288,56 @@
         </main>
       </div>
     `;
+  }
+
+  function initScreenLock() {
+    const button = document.querySelector("#screen-lock-button");
+    if (!button) return;
+
+    const showLockScreen = () => {
+      const configuration = window.HKStorage.load("configuration")[0] || {};
+      if (!configuration.verrouillageMotDePasse) {
+        notify("Définissez d’abord un mot de passe dans Paramètres.");
+        return;
+      }
+      sessionStorage.setItem("hk-screen-locked", "true");
+      let overlay = document.querySelector(".screen-lock-overlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.className = "screen-lock-overlay";
+        document.body.appendChild(overlay);
+      }
+      overlay.style.setProperty("--lock-background", configuration.verrouillageFond ? `url("${configuration.verrouillageFond}")` : "none");
+      overlay.innerHTML = `
+        <div class="screen-lock-shade"></div>
+        <form class="screen-lock-card">
+          <div class="screen-lock-brand">${configuration.logo ? `<img src="${configuration.logo}" alt="Logo Harz Karreg">` : "HK"}</div>
+          <span class="modal-eyebrow">Écran verrouillé</span>
+          <h2>Harz Karreg</h2>
+          <p>Saisissez le mot de passe pour retrouver le planning.</p>
+          <input class="input" type="password" name="password" placeholder="Mot de passe" autocomplete="current-password" required>
+          <small class="screen-lock-error" aria-live="polite"></small>
+          <button class="button primary" type="submit">Déverrouiller</button>
+        </form>
+      `;
+      overlay.classList.add("open");
+      const input = overlay.querySelector("input");
+      input.focus();
+      overlay.querySelector("form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (input.value !== configuration.verrouillageMotDePasse) {
+          overlay.querySelector(".screen-lock-error").textContent = "Mot de passe incorrect.";
+          input.select();
+          return;
+        }
+        sessionStorage.removeItem("hk-screen-locked");
+        overlay.classList.remove("open");
+        overlay.innerHTML = "";
+      });
+    };
+
+    button.addEventListener("click", showLockScreen);
+    if (sessionStorage.getItem("hk-screen-locked") === "true") showLockScreen();
   }
 
   function renderStats(target) {
@@ -231,5 +376,5 @@
     document.querySelector("#page-actions").innerHTML = html;
   }
 
-  window.HKUI = { avatar, badge, el, initials, initSidebar, notify, renderStats, routeStatusLabel, setActions, shell };
+  window.HKUI = { avatar, badge, el, initials, initDisplayControls, initScreenLock, initSidebar, notify, renderStats, routeStatusLabel, setActions, shell };
 })();

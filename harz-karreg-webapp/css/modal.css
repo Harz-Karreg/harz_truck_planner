@@ -55,6 +55,19 @@
   padding: 20px;
 }
 
+.modal-custom-body {
+  min-height: 0;
+}
+
+.modal-eyebrow {
+  margin: 0 0 5px;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .field {
   display: grid;
   gap: 8px;

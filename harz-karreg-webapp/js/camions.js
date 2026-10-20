@@ -1,9 +1,12 @@
 (function () {
+  const typeOptions = ["Tracteur", "Porteur"].map((value) => ({ value, label: value }));
+
   function fields(truck = {}) {
     return [
       { name: "marque", label: "Marque", value: truck.marque, required: true },
       { name: "modele", label: "Modèle", value: truck.modele, required: true },
-      { name: "immatriculation", label: "Immatriculation", value: truck.immatriculation, required: true }
+      { name: "immatriculation", label: "Immatriculation", value: truck.immatriculation, required: true },
+      { name: "type", label: "Type de camion", type: "select", value: truck.type || "Tracteur", options: typeOptions, required: true }
     ];
   }
 
@@ -47,6 +50,7 @@
               <h2 class="resource-title">${truck.marque}</h2>
               <p class="resource-detail">${truck.modele}</p>
               <p class="resource-detail">${truck.immatriculation}</p>
+              <p class="resource-detail"><span class="badge info">${truck.type || "Tracteur"}</span></p>
             </div>
             <div class="actions">
               <button class="button ghost" data-edit="${truck.id}">Modifier</button>

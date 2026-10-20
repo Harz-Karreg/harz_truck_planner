@@ -38,6 +38,7 @@
     window.HKBins.render();
     window.HKTrailers.render();
     window.HKRoutes.render();
+    window.HKSettings?.render();
     initActions(page);
   }
 
@@ -46,6 +47,8 @@
     window.HKStorage.seedIfEmpty();
     document.querySelector("#app-shell").innerHTML = window.HKUI.shell(page);
     window.HKUI.initSidebar();
+    window.HKUI.initDisplayControls();
+    window.HKUI.initScreenLock();
     renderPage(page);
   });
 })();

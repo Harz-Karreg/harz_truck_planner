@@ -1,5 +1,13 @@
 (function () {
   let selectedWeekOffset = 0;
+  let slideshowTimer = null;
+  let countdownTimer = null;
+
+  const planningModes = [
+    { value: "bennes", label: "Bennes" },
+    { value: "semi", label: "Semi-remorques" },
+    { value: "porteurs", label: "Porteurs" }
+  ];
 
   const dayShortLabels = ["L", "M", "M", "J", "V", "S", "D"];
   const routeStatuses = [
@@ -29,6 +37,56 @@
 
   function binName(bin) {
     return bin ? `${bin.nom} - ${bin.statut}` : "Sans benne";
+  }
+
+  function routeMaterialLabel(route) {
+    const material = window.HKStorage.load("matieres").find((item) => item.id === route.matiereId);
+    if (!material) return route.description || "";
+    return material.code ? `${material.code} — ${material.nom}` : material.nom;
+  }
+
+  function formatCountdown(seconds) {
+    const safeSeconds = Math.max(0, Number(seconds) || 0);
+    return `${String(Math.floor(safeSeconds / 60)).padStart(2, "0")}:${String(safeSeconds % 60).padStart(2, "0")}`;
+  }
+
+  function planningConfiguration() {
+    return {
+      id: "general",
+      planningVue: "bennes",
+      planningVerrouille: false,
+      planningDuree: 15,
+      planningEcrans: ["bennes", "semi", "porteurs"],
+      ...(window.HKStorage.load("configuration")[0] || {})
+    };
+  }
+
+  function enabledPlanningModes(configuration) {
+    const enabled = Array.isArray(configuration.planningEcrans) && configuration.planningEcrans.length
+      ? configuration.planningEcrans
+      : planningModes.map((mode) => mode.value);
+    return planningModes.filter((mode) => enabled.includes(mode.value));
+  }
+
+  function routeMatchesPlanningMode(route, mode, trucks) {
+    const truck = trucks.find((item) => item.id === route.camionId);
+    if (mode === "porteurs") return truck?.type === "Porteur";
+    if (truck?.type === "Porteur") return false;
+    if (mode === "semi") return Boolean(route.remorqueId) && !route.benneId;
+    return Boolean(route.benneId);
+  }
+
+  function planningModeControls(configuration) {
+    const availableModes = enabledPlanningModes(configuration);
+    return `
+      <div class="planning-view-controls">
+        <div class="planning-view-tabs" aria-label="Type de planning">
+          ${availableModes.map((mode) => `
+            <button class="planning-view-tab ${configuration.planningVue === mode.value ? "active" : ""}" type="button" data-planning-mode="${mode.value}">${mode.label}</button>
+          `).join("")}
+        </div>
+      </div>
+    `;
   }
 
   function availabilityId(driverId, weekStart) {
@@ -147,6 +205,11 @@
     return `${String(hour).padStart(2, "0")}:00`;
   }
 
+  function routeTimeLabel(route) {
+    if (route.journeeEntiere) return "Journée entière · 07:00 - 17:00";
+    return `${route.heure}${route.heureFin ? ` - ${route.heureFin}` : ""}`;
+  }
+
   function minutesToTime(minutes) {
     const clamped = clampTime(minutes);
     const rounded = Math.round(clamped / 15) * 15;
@@ -190,8 +253,8 @@
 
     return `
       <tr>
-        <td><strong>${escapeHtml(route.nom)}</strong><br><span>${escapeHtml(route.description)}</span></td>
-        <td>${escapeHtml(route.date)}<br>${escapeHtml(route.heure)}${route.heureFin ? ` - ${escapeHtml(route.heureFin)}` : ""}</td>
+        <td><strong>${escapeHtml(route.nom)}</strong><br><span>${escapeHtml(routeMaterialLabel(route))}</span></td>
+        <td>${escapeHtml(route.date)}<br>${escapeHtml(routeTimeLabel(route))}</td>
         <td>${escapeHtml(route.depart)} -> ${escapeHtml(route.arrivee)}</td>
         <td>${escapeHtml(driverName(driver))}</td>
         <td>${trailer ? escapeHtml(trailerName(trailer)) : "-"}</td>
@@ -280,9 +343,10 @@
           <button class="route-icon-action danger" type="button" data-delete-route="${route.id}" aria-label="Supprimer la tournée">-</button>
         </div>
         <div class="route-scroll">
-          <h3 class="route-title">${route.nom}</h3>
-          <div class="route-meta">${route.heure}${route.heureFin ? ` - ${route.heureFin}` : ""} · ${route.depart} -> ${route.arrivee}</div>
-          ${driver ? `<div class="route-meta">${driverName(driver)}</div>` : ""}
+          <h3 class="route-title">${driver ? driverName(driver) : "Non assigné"}</h3>
+          <div class="route-week-name">${route.nom}</div>
+          ${routeMaterialLabel(route) ? `<div class="route-material">${escapeHtml(routeMaterialLabel(route))}</div>` : ""}
+          <div class="route-meta">${escapeHtml(routeTimeLabel(route))} · ${route.depart} -> ${route.arrivee}</div>
           ${trailer ? `<div class="route-meta">${trailerName(trailer)}</div>` : ""}
           ${truck ? `<div class="route-meta">${truckName(truck)}</div>` : ""}
           ${bin ? `<div class="route-meta">${binName(bin)}</div>` : ""}
@@ -296,6 +360,271 @@
     `;
   }
 
+  function modalRouteCards(routes) {
+    if (!routes.length) {
+      return '<div class="day-lane-empty">Aucune tournée</div>';
+    }
+
+    const layout = routeLayout(routes);
+    return layout.routes.map((item) => {
+      const width = 100 / layout.lanes;
+      const left = item.lane * width;
+      const statusClass = `route-status-${item.route.statut || "Planifiee"}`.replace(/\s+/g, "-").toLowerCase();
+
+      return `
+        <button
+          class="day-route-card ${statusClass}"
+          type="button"
+          data-day-route="${item.route.id}"
+          style="top:${item.top}px;height:${item.height}px;left:calc(${left}% + 6px);width:calc(${width}% - 12px)"
+        >
+          <strong>${escapeHtml(item.route.nom)}</strong>
+          ${routeMaterialLabel(item.route) ? `<em>${escapeHtml(routeMaterialLabel(item.route))}</em>` : ""}
+          <span>${escapeHtml(routeTimeLabel(item.route))}</span>
+          <small>${escapeHtml(item.route.depart)} → ${escapeHtml(item.route.arrivee)}</small>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function dayDriverHeader(driver, routes) {
+    return `
+      <div class="day-driver-header">
+        <div class="avatar">${window.HKUI.initials([driver.prenom, driver.nom])}</div>
+        <div>
+          <strong>${escapeHtml(driver.prenom)} ${escapeHtml(driver.nom)}</strong>
+          <span>${routes.length} tournée${routes.length === 1 ? "" : "s"}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function openDayView(day, days, drivers, trailers, trucks, bins) {
+    const routes = window.HKStorage.load("tournees").filter((route) => route.date === day.iso);
+    const activeDrivers = drivers.filter((driver) => Boolean(getAvailability(driver, days)[day.iso]));
+    const inactiveDrivers = drivers.filter((driver) => !getAvailability(driver, days)[day.iso]);
+    const activeIds = new Set(activeDrivers.map((driver) => driver.id));
+    const exceptionRoutes = routes.filter((route) => !route.conducteurId || !activeIds.has(route.conducteurId));
+    const timelineHeight = ((timelineEnd - timelineStart) / 60) * hourHeight;
+    const gridColumns = `62px ${activeDrivers.map(() => "minmax(238px, 1fr)").join(" ")} minmax(270px, 1fr)`;
+
+    const activeList = activeDrivers.length
+      ? activeDrivers.map((driver) => {
+        const driverRoutes = routes.filter((route) => route.conducteurId === driver.id);
+        return `
+          <button class="day-active-driver" type="button" data-scroll-driver="${driver.id}">
+            <span class="avatar">${window.HKUI.initials([driver.prenom, driver.nom])}</span>
+            <span>
+              <strong>${escapeHtml(driver.prenom)} ${escapeHtml(driver.nom)}</strong>
+              <small>${driverRoutes.length} tournée${driverRoutes.length === 1 ? "" : "s"}</small>
+            </span>
+          </button>
+        `;
+      }).join("")
+      : '<p class="day-empty-note">Aucun chauffeur actif.</p>';
+
+    const inactiveList = inactiveDrivers.length
+      ? inactiveDrivers.map((driver) => `<span class="off-driver">${escapeHtml(driver.prenom)} ${escapeHtml(driver.nom)}</span>`).join("")
+      : '<span class="off-driver">Tous les chauffeurs travaillent</span>';
+
+    const driverColumns = activeDrivers.map((driver) => {
+      const driverRoutes = routes.filter((route) => route.conducteurId === driver.id);
+      return `
+        <div class="day-column-header" data-driver-header="${driver.id}">
+          ${dayDriverHeader(driver, driverRoutes)}
+        </div>
+      `;
+    }).join("");
+
+    const driverLanes = activeDrivers.map((driver) => {
+      const driverRoutes = routes.filter((route) => route.conducteurId === driver.id);
+      return `
+        <div class="driver-day-lane" data-driver-lane="${driver.id}" style="--day-modal-height:${timelineHeight}px">
+          ${modalRouteCards(driverRoutes)}
+        </div>
+      `;
+    }).join("");
+
+    window.HKModal.openContent({
+      title: `${day.name} ${day.label}`,
+      eyebrow: "Organisation de la journée",
+      className: "day-planning-modal",
+      rootClass: "day-planning-root",
+      content: `
+        <div class="day-modal-layout">
+          <aside class="day-active-rail">
+            <div>
+              <span class="day-panel-label">Chauffeurs actifs</span>
+              <strong>${activeDrivers.length} disponible${activeDrivers.length === 1 ? "" : "s"}</strong>
+            </div>
+            <div class="day-active-list">${activeList}</div>
+            <button class="button primary day-add-route" type="button" data-day-add-route>+ Tournée</button>
+          </aside>
+          <div class="day-schedule-scroll">
+            <div class="day-schedule-grid" style="grid-template-columns:${gridColumns}">
+              <div class="day-time-header">Heure</div>
+              ${driverColumns}
+              <div class="day-column-header day-off-header">
+                <strong>Non affecté / hors service</strong>
+                <span>${inactiveDrivers.length} chauffeur${inactiveDrivers.length === 1 ? "" : "s"} indisponible${inactiveDrivers.length === 1 ? "" : "s"}</span>
+                <div class="off-driver-list">${inactiveList}</div>
+              </div>
+              <div class="day-time-axis" style="--day-modal-height:${timelineHeight}px">
+                ${timelineHours().map((hour) => `<span style="top:${(hour - 6) * hourHeight}px">${formatHour(hour)}</span>`).join("")}
+              </div>
+              ${driverLanes}
+              <div class="driver-day-lane day-off-lane" style="--day-modal-height:${timelineHeight}px">
+                ${modalRouteCards(exceptionRoutes)}
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      onOpen(node) {
+        node.querySelectorAll("[data-scroll-driver]").forEach((button) => {
+          button.addEventListener("click", () => {
+            node.querySelector(`[data-driver-header="${button.dataset.scrollDriver}"]`)?.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+              inline: "center"
+            });
+          });
+        });
+
+        node.querySelector("[data-day-add-route]")?.addEventListener("click", () => {
+          window.HKRoutes.openForm(null, {
+            date: day.iso,
+            heure: "08:00",
+            conducteurId: activeDrivers[0]?.id || "",
+            statut: "Planifiee"
+          });
+        });
+
+        node.querySelectorAll("[data-day-route]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const route = window.HKStorage.getById("tournees", button.dataset.dayRoute);
+            if (route) openRouteEditor(route, days, drivers, trailers, trucks, bins);
+          });
+        });
+      }
+    });
+  }
+
+  function weekProjectionRoute(route, drivers, available) {
+    const driver = drivers.find((item) => item.id === route.conducteurId);
+    const statusClass = `route-status-${route.statut || "Planifiee"}`.replace(/\s+/g, "-").toLowerCase();
+    return `
+      <button class="week-projection-route ${statusClass} ${available ? "" : "route-alert"}" type="button" data-week-route="${route.id}">
+        <strong>${escapeHtml(driver ? driverName(driver) : "Non assigné")}</strong>
+        <span>${escapeHtml(route.nom)}</span>
+        ${routeMaterialLabel(route) ? `<em>${escapeHtml(routeMaterialLabel(route))}</em>` : ""}
+        <small>${escapeHtml(routeTimeLabel(route))}</small>
+      </button>
+    `;
+  }
+
+  function openWeekView(days, drivers, trailers, trucks, bins, requestedMode) {
+    const dates = days.map((day) => day.iso);
+    let configuration = planningConfiguration();
+    if (requestedMode && requestedMode !== configuration.planningVue) {
+      window.HKStorage.update("configuration", configuration.id, { planningVue: requestedMode });
+      configuration = planningConfiguration();
+    }
+    const availableModes = enabledPlanningModes(configuration);
+    const mode = availableModes.some((item) => item.value === configuration.planningVue)
+      ? configuration.planningVue
+      : availableModes[0].value;
+    if (mode !== configuration.planningVue) {
+      window.HKStorage.update("configuration", configuration.id, { planningVue: mode });
+      configuration = planningConfiguration();
+    }
+    const modeLabel = planningModes.find((item) => item.value === mode)?.label || "Planning";
+    document.querySelectorAll("[data-planning-mode]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.planningMode === mode);
+    });
+    const routes = window.HKStorage.load("tournees").filter((route) => dates.includes(route.date) && routeMatchesPlanningMode(route, mode, trucks));
+    const activeDrivers = drivers.filter((driver) => days.some((day) => getAvailability(driver, days)[day.iso]));
+
+    window.HKModal.openContent({
+      title: `${days[0].label} – ${days[6].label}`,
+      eyebrow: `Projection de la semaine · ${modeLabel}`,
+      className: "week-planning-modal",
+      rootClass: "week-planning-root",
+      content: `
+        <div class="week-modal-toolbar">
+          <div class="planning-view-tabs">
+            ${availableModes.map((item) => `<button class="planning-view-tab ${item.value === mode ? "active" : ""}" type="button" data-modal-planning-mode="${item.value}">${item.label}</button>`).join("")}
+          </div>
+          <div class="week-modal-status">
+            <span class="slideshow-countdown" data-slideshow-countdown>${configuration.planningVerrouille ? "PAUSE" : formatCountdown(configuration.planningDuree)}</span>
+            <button class="planning-lock-button ${configuration.planningVerrouille ? "locked" : ""}" type="button" data-modal-planning-lock>
+              ${configuration.planningVerrouille ? "🔒 Vue semaine verrouillée" : "▶ Diaporama semaine actif"}
+            </button>
+          </div>
+        </div>
+        <div class="week-projection-layout">
+          <aside class="week-projection-drivers">
+            <div>
+              <span class="day-panel-label">Chauffeurs actifs</span>
+              <strong>${activeDrivers.length} sur la semaine</strong>
+            </div>
+            <div class="week-projection-driver-list">
+              ${activeDrivers.length ? activeDrivers.map((driver) => {
+                const workingDays = days.filter((day) => getAvailability(driver, days)[day.iso]).length;
+                return `
+                  <div class="week-projection-driver">
+                    <span class="avatar">${window.HKUI.initials([driver.prenom, driver.nom])}</span>
+                    <span>
+                      <strong>${escapeHtml(driver.prenom)} ${escapeHtml(driver.nom)}</strong>
+                      <small>${workingDays} jour${workingDays === 1 ? "" : "s"} actif${workingDays === 1 ? "" : "s"}</small>
+                    </span>
+                  </div>
+                `;
+              }).join("") : '<p class="day-empty-note">Aucun chauffeur actif.</p>'}
+            </div>
+          </aside>
+          <div class="week-projection-days">
+            ${days.map((day) => {
+              const dayRoutes = routes
+                .filter((route) => route.date === day.iso)
+                .sort((a, b) => timeToMinutes(a.heure) - timeToMinutes(b.heure));
+              return `
+                <section class="week-projection-day">
+                  <header>
+                    <strong>${day.name}</strong>
+                    <span>${day.label}</span>
+                    <small>${dayRoutes.length} tournée${dayRoutes.length === 1 ? "" : "s"}</small>
+                  </header>
+                  <div class="week-projection-route-list">
+                    ${dayRoutes.length
+                      ? dayRoutes.map((route) => weekProjectionRoute(route, drivers, isDriverAvailableForRoute(route, drivers, days))).join("")
+                      : '<div class="week-projection-empty">Aucune tournée</div>'}
+                  </div>
+                </section>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `,
+      onOpen(node) {
+        node.querySelectorAll("[data-modal-planning-mode]").forEach((button) => {
+          button.addEventListener("click", () => openWeekView(days, drivers, trailers, trucks, bins, button.dataset.modalPlanningMode));
+        });
+        node.querySelector("[data-modal-planning-lock]")?.addEventListener("click", () => {
+          window.HKStorage.update("configuration", configuration.id, { planningVerrouille: !configuration.planningVerrouille });
+          openWeekView(days, drivers, trailers, trucks, bins, mode);
+        });
+        node.querySelectorAll("[data-week-route]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const route = window.HKStorage.getById("tournees", button.dataset.weekRoute);
+            if (route) openRouteEditor(route, days, drivers, trailers, trucks, bins);
+          });
+        });
+      }
+    });
+    startPlanningSlideshow(configuration, days, drivers, trailers, trucks, bins);
+  }
+
   function renderTimeline(day, dayRoutes, drivers, trailers, trucks, bins, days) {
     if (!dayRoutes.length) {
       return `
@@ -307,6 +636,7 @@
             </div>
             <div class="day-head-actions">
               <span class="badge">0</span>
+              <button class="day-view-button" type="button" data-open-day="${day.iso}">Journée</button>
               <button class="pdf-icon-button" type="button" data-export-day="${day.iso}" aria-label="Exporter la journée en PDF">PDF</button>
             </div>
           </header>
@@ -329,6 +659,7 @@
           </div>
           <div class="day-head-actions">
             <span class="badge">${dayRoutes.length}</span>
+            <button class="day-view-button" type="button" data-open-day="${day.iso}">Journée</button>
             <button class="pdf-icon-button" type="button" data-export-day="${day.iso}" aria-label="Exporter la journée en PDF">PDF</button>
           </div>
         </header>
@@ -387,7 +718,7 @@
 
         window.HKStorage.update("tournees", id, {
           date: column.dataset.date,
-          heure: dropTimeFromEvent(event, column)
+          heure: route.journeeEntiere ? "07:00" : dropTimeFromEvent(event, column)
         });
         window.HKUI.notify("Tournée déplacée dans le planning.");
         render();
@@ -457,6 +788,14 @@
           value: route.heureFin || "",
         },
         {
+          name: "journeeEntiere",
+          label: "Planification",
+          type: "checkbox",
+          value: Boolean(route.journeeEntiere),
+          help: "Journée entière (07:00 - 17:00)",
+          full: true
+        },
+        {
           name: "remorqueId",
           label: "Remorque",
           type: "select",
@@ -491,6 +830,10 @@
         }
       ],
       onSubmit(data) {
+        if (data.journeeEntiere) {
+          data.heure = "07:00";
+          data.heureFin = "17:00";
+        }
         const selectedDriver = drivers.find((driver) => driver.id === data.conducteurId);
         if (selectedDriver && !getAvailability(selectedDriver, days)[route.date]) {
           window.HKUI.notify("Chauffeur indisponible sur cette journée.");
@@ -501,6 +844,7 @@
           conducteurId: data.conducteurId,
           heure: data.heure,
           heureFin: data.heureFin,
+          journeeEntiere: data.journeeEntiere,
           remorqueId: data.remorqueId,
           camionId: data.camionId,
           benneId: data.benneId
@@ -582,6 +926,22 @@
     });
   }
 
+  function bindDayViews(days, drivers, trailers, trucks, bins) {
+    document.querySelectorAll("[data-open-day]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const day = days.find((item) => item.iso === button.dataset.openDay);
+        if (day) openDayView(day, days, drivers, trailers, trucks, bins);
+      });
+    });
+  }
+
+  function bindWeekView(days, drivers, trailers, trucks, bins) {
+    document.querySelector("[data-open-week]")?.addEventListener("click", () => {
+      openWeekView(days, drivers, trailers, trucks, bins);
+    });
+  }
+
   function renderWeekCards(weekOptions) {
     return `
       <div class="week-card-grid" aria-label="Semaines du calendrier">
@@ -624,6 +984,80 @@
     }).join("");
   }
 
+  function bindBoardScrollbars() {
+    const topScrollbar = document.querySelector("[data-week-scroll-top]");
+    const topTrack = topScrollbar?.querySelector(".week-scroll-top-track");
+    const board = document.querySelector(".week-board");
+    const grid = board?.querySelector(".week-grid");
+    if (!topScrollbar || !topTrack || !board || !grid) return;
+
+    let syncing = false;
+    const updateTrack = () => {
+      topTrack.style.width = `${board.scrollWidth}px`;
+      topScrollbar.scrollLeft = board.scrollLeft;
+    };
+    const syncScroll = (source, target) => {
+      if (syncing) return;
+      syncing = true;
+      target.scrollLeft = source.scrollLeft;
+      requestAnimationFrame(() => { syncing = false; });
+    };
+
+    topScrollbar.addEventListener("scroll", () => syncScroll(topScrollbar, board));
+    board.addEventListener("scroll", () => syncScroll(board, topScrollbar));
+    updateTrack();
+
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(updateTrack);
+      observer.observe(board);
+      observer.observe(grid);
+      board._topScrollObserver = observer;
+    }
+  }
+
+  function bindPlanningModeControls(configuration, days, drivers, trailers, trucks, bins) {
+    document.querySelectorAll("[data-planning-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        openWeekView(days, drivers, trailers, trucks, bins, button.dataset.planningMode);
+      });
+    });
+
+  }
+
+  function startPlanningSlideshow(configuration, days, drivers, trailers, trucks, bins) {
+    clearInterval(slideshowTimer);
+    clearInterval(countdownTimer);
+    const availableModes = enabledPlanningModes(configuration);
+    if (configuration.planningVerrouille || availableModes.length < 2) {
+      const counter = document.querySelector("[data-slideshow-countdown]");
+      if (counter && availableModes.length < 2 && !configuration.planningVerrouille) counter.textContent = "FIXE";
+      return;
+    }
+    const duration = Math.min(300, Math.max(5, Number(configuration.planningDuree) || 15)) * 1000;
+    const deadline = Date.now() + duration;
+    const updateCountdown = () => {
+      const counter = document.querySelector("[data-slideshow-countdown]");
+      if (!counter) {
+        clearInterval(countdownTimer);
+        return;
+      }
+      const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      counter.textContent = formatCountdown(seconds);
+    };
+    updateCountdown();
+    countdownTimer = setInterval(updateCountdown, 250);
+    slideshowTimer = setInterval(() => {
+      if (!document.querySelector(".modal-root.week-planning-root.open")) {
+        clearInterval(slideshowTimer);
+        clearInterval(countdownTimer);
+        return;
+      }
+      const currentIndex = availableModes.findIndex((mode) => mode.value === planningConfiguration().planningVue);
+      const nextMode = availableModes[(currentIndex + 1) % availableModes.length].value;
+      openWeekView(days, drivers, trailers, trucks, bins, nextMode);
+    }, duration);
+  }
+
   function render() {
     if (document.body.dataset.page !== "planning") return;
 
@@ -635,8 +1069,10 @@
     const trailers = window.HKStorage.load("remorques");
     const trucks = window.HKStorage.load("camions");
     const bins = window.HKStorage.load("bennes");
+    const configuration = planningConfiguration();
     const routes = window.HKStorage.load("tournees");
 
+    workspace.querySelector(".week-board")?._topScrollObserver?.disconnect();
     workspace.innerHTML = "";
     workspace.insertAdjacentHTML("beforeend", `
       <div class="section-header">
@@ -644,15 +1080,22 @@
           <h2>${currentOption.label}</h2>
           <span class="tag">${days[0].label} - ${days[6].label}</span>
         </div>
+        <button class="button ghost" type="button" data-open-week>Vue semaine</button>
       </div>
+      ${planningModeControls(configuration)}
       ${renderWeekCards(weekOptions)}
       <div class="planning-shell">
         <aside class="card driver-rail">
           ${renderDrivers(drivers, days)}
         </aside>
-        <div class="card week-board">
-          <div class="week-grid">
-            ${days.map((day) => renderTimeline(day, routes.filter((route) => route.date === day.iso), drivers, trailers, trucks, bins, days)).join("")}
+        <div class="planning-board-stack">
+          <div class="week-scroll-top" data-week-scroll-top aria-label="Défilement horizontal du planning">
+            <div class="week-scroll-top-track"></div>
+          </div>
+          <div class="card week-board">
+            <div class="week-grid">
+              ${days.map((day) => renderTimeline(day, routes.filter((route) => route.date === day.iso), drivers, trailers, trucks, bins, days)).join("")}
+            </div>
           </div>
         </div>
       </div>
@@ -664,7 +1107,11 @@
     bindRouteOpen(days, drivers, trailers, trucks, bins);
     bindCreateSlots();
     bindExportControls(days);
+    bindDayViews(days, drivers, trailers, trucks, bins);
+    bindWeekView(days, drivers, trailers, trucks, bins);
     bindDrag();
+    bindBoardScrollbars();
+    bindPlanningModeControls(configuration, days, drivers, trailers, trucks, bins);
   }
 
   window.HKPlanning = { render };

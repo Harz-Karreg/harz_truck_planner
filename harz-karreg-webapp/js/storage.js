@@ -6,7 +6,10 @@
     bennes: `${namespace}:bennes`,
     remorques: `${namespace}:remorques`,
     tournees: `${namespace}:tournees`,
-    disponibilites: `${namespace}:disponibilites`
+    disponibilites: `${namespace}:disponibilites`,
+    matieres: `${namespace}:matieres`,
+    adresses: `${namespace}:adresses`,
+    configuration: `${namespace}:configuration`
   };
 
   function weekDate(offset) {
@@ -146,7 +149,18 @@
         statut: "Planifiee"
       }
     ],
-    disponibilites: []
+    disponibilites: [],
+    matieres: [
+      { id: "mat-cuivre", code: "CU", nom: "Cuivre" },
+      { id: "mat-laiton", code: "LAI", nom: "Laiton" },
+      { id: "mat-aluminium", code: "ALU", nom: "Aluminium" }
+    ],
+    adresses: [
+      { id: "adr-eurometal", nom: "Eurometal", adresse: "9 Boulevard Monge, 69330 Meyzieu", ordre: 0 }
+    ],
+    configuration: [
+      { id: "general", logo: "", planningVerrouille: false, planningVue: "bennes", planningDuree: 15, planningEcrans: ["bennes", "semi", "porteurs"], verrouillageMotDePasse: "", verrouillageFond: "" }
+    ]
   };
 
   function uid(prefix) {
