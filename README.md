@@ -16,6 +16,50 @@ Le choix d'une interface ne confere aucun droit. Les autorisations seront determ
 
 Ouvrir `harz-karreg-webapp/index.html` avec Live Server.
 
+### Application desktop Electron
+
+Prerequis : Node.js 20 ou une version LTS plus recente.
+
+```powershell
+npm install
+npm start
+```
+
+La fenetre de demarrage propose trois interfaces :
+
+- ADMIN ouvre l'application de gestion existante ;
+- COMPANION ouvre la premiere structure de consultation en lecture seule ;
+- DRIVER ouvre la premiere structure responsive du chauffeur.
+
+COMPANION et DRIVER n'affichent encore aucune donnee metier. La selection d'un mode ne cree aucun droit et ne remplace pas la future authentification.
+
+L'application web historique reste utilisable independamment d'Electron. Ses donnees navigateur ne sont ni supprimees, ni importees automatiquement dans le profil Electron a ce stade.
+
+## Verification
+
+```powershell
+npm test
+npm run check
+```
+
+Les tests protegent actuellement la presence des pages et collections historiques, la separation des trois modes et les options de securite essentielles de la fenetre Electron.
+
+## Packaging Windows
+
+Construction locale non installable :
+
+```powershell
+npm run pack:win
+```
+
+Creation de l'installateur NSIS :
+
+```powershell
+npm run dist:win
+```
+
+Les fichiers generes sont places dans `dist/`. Les versions de developpement ne sont pas signees. La signature de production sera activee lorsqu'un certificat sera disponible.
+
 ## Contraintes
 
 - HTML5, CSS3 et JavaScript ES6.

@@ -35,7 +35,7 @@ Scripts cibles :
 - `npm run test:e2e` ;
 - `npm run dist:win`.
 
-Le packaging Windows utilisera un installateur NSIS signe lorsque le certificat de signature sera disponible.
+Le packaging de developpement reste non signe pour fonctionner sans certificat ni privileges Windows speciaux. Le packaging de production activera l'edition et la signature de l'executable lorsqu'un certificat de signature sera disponible.
 
 ### 5. Selection des modes
 

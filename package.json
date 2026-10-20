@@ -3,13 +3,53 @@
   "version": "0.2.0",
   "private": true,
   "description": "Plateforme desktop de planification transport HARZ KARREG",
+  "author": "HARZ KARREG",
   "license": "MIT",
+  "main": "electron/main/main.js",
   "scripts": {
+    "dev": "electron .",
+    "start": "electron .",
     "test": "node --test",
-    "check": "node scripts/check-js.js"
+    "check": "node scripts/check-js.js",
+    "pack:win": "electron-builder --win --dir",
+    "dist:win": "electron-builder --win nsis"
   },
   "devDependencies": {
     "electron": "38.8.6",
     "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.harzkarreg.planner",
+    "productName": "HARZ KARREG",
+    "asar": true,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "harz-karreg-webapp/**/*",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "HARZ-KARREG-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HARZ KARREG"
+    }
   }
 }

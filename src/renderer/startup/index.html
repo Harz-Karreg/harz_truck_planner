@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <title>HARZ KARREG — Sélection du mode</title>
+    <link rel="stylesheet" href="../shared/mode-shell.css">
+    <link rel="stylesheet" href="app.css">
+  </head>
+  <body>
+    <main class="mode-startup">
+      <header class="startup-header">
+        <a class="brand" href="index.html" aria-label="HARZ KARREG">
+          <span class="brand-mark">HK</span>
+          <span class="brand-copy">
+            <strong>HARZ KARREG</strong>
+            <small>DRIVE BEYOND.</small>
+          </span>
+        </a>
+        <span class="environment-badge">DESKTOP</span>
+      </header>
+
+      <section class="startup-intro" aria-labelledby="startup-title">
+        <p class="eyebrow">ESPACE DE TRAVAIL</p>
+        <h1 id="startup-title">Choisissez votre interface</h1>
+        <p>Le mode adapte l’affichage à votre mission. Les autorisations seront toujours contrôlées par le compte connecté.</p>
+      </section>
+
+      <section class="mode-grid" aria-label="Modes disponibles">
+        <a class="mode-card mode-card-primary" href="../../../harz-karreg-webapp/index.html" data-mode="admin">
+          <span class="mode-index">01</span>
+          <span class="mode-icon" aria-hidden="true">A</span>
+          <span class="mode-content">
+            <span class="mode-kicker">GESTION OPÉRATIONNELLE</span>
+            <strong>ADMIN</strong>
+            <span>Gérer les tournées, les ressources, les affectations et les plannings existants.</span>
+          </span>
+          <span class="mode-action">Ouvrir <span aria-hidden="true">→</span></span>
+        </a>
+
+        <a class="mode-card" href="../companion/index.html" data-mode="companion">
+          <span class="mode-index">02</span>
+          <span class="mode-icon" aria-hidden="true">C</span>
+          <span class="mode-content">
+            <span class="mode-kicker">AFFICHAGE FLOTTE</span>
+            <strong>COMPANION</strong>
+            <span>Consulter les plannings hebdomadaires dans une interface dédiée aux écrans.</span>
+          </span>
+          <span class="mode-action">Ouvrir <span aria-hidden="true">→</span></span>
+        </a>
+
+        <a class="mode-card" href="../driver/index.html" data-mode="driver">
+          <span class="mode-index">03</span>
+          <span class="mode-icon" aria-hidden="true">D</span>
+          <span class="mode-content">
+            <span class="mode-kicker">ESPACE CHAUFFEUR</span>
+            <strong>DRIVER</strong>
+            <span>Consulter un planning personnel et les véhicules qui seront autorisés.</span>
+          </span>
+          <span class="mode-action">Ouvrir <span aria-hidden="true">→</span></span>
+        </a>
+      </section>
+
+      <footer class="startup-footer">
+        <span>HARZ KARREG 2026</span>
+        <span id="runtime-info">Sélection d’interface — authentification à venir</span>
+      </footer>
+    </main>
+    <script src="app.js" defer></script>
+  </body>
+</html>
