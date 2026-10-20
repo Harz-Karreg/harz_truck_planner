@@ -29,6 +29,7 @@ test("les mises à jour sont désactivées en développement et proposées aprè
 test("le workflow publie uniquement avec un secret GitHub Actions", () => {
   assert.match(workflow, /secrets\.RELEASES_TOKEN/);
   assert.match(workflow, /Harz-Karreg\/harz_truck_planner-releases/);
+  assert.match(workflow, /dist:win -- --publish never/);
   assert.doesNotMatch(workflow, /ghp_[A-Za-z0-9]+/);
 });
 

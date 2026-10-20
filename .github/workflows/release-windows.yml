@@ -36,7 +36,7 @@ jobs:
           if ("v$packageVersion" -ne "${{ github.ref_name }}") { throw "Le tag doit être v$packageVersion." }
 
       - name: Construire l'installateur et les manifestes
-        run: npm run dist:win
+        run: npm run dist:win -- --publish never
 
       - name: Publier dans le dépôt public de mises à jour
         shell: pwsh
