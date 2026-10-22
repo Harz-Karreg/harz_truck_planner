@@ -89,6 +89,14 @@ npm run dist:pi
 
 Les instructions de déploiement, d'autostart et les vérifications matérielles sont décrites dans [docs/raspberry-pi-companion.md](docs/raspberry-pi-companion.md).
 
+Pour préparer automatiquement un nouveau boîtier ARM64 :
+
+```bash
+sudo bash deployment/raspberry-pi/install-harzos.sh --user harzkarreg
+```
+
+Ajouter `--with-electron` pour construire et installer également l'application Electron locale. Cette option exige au moins 6 Gio disponibles.
+
 Un déploiement Docker/Nginx permet également d'ouvrir COMPANION depuis le réseau local sur le port `8080` :
 
 ```bash

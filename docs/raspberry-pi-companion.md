@@ -7,6 +7,44 @@
 - Node.js 20 ou version LTS plus récente uniquement pour construire depuis les sources ;
 - test final réalisé sur un appareil ARM64 réel.
 
+## Installation automatisée d'un nouveau boîtier
+
+Après une installation propre de Debian/Raspberry Pi OS 64 bits et la création de l'utilisateur `harzkarreg` :
+
+```bash
+sudo apt update
+sudo apt install -y git
+git clone https://github.com/Harz-Karreg/harz_truck_planner.git /tmp/harzkarreg-installer
+sudo bash /tmp/harzkarreg-installer/deployment/raspberry-pi/install-harzos.sh --user harzkarreg
+```
+
+Cette installation :
+
+- vérifie l'architecture ARM64 ;
+- installe Git, Docker Compose, Chromium et les dépendances nécessaires ;
+- prépare les répertoires persistants dans `/opt/harzkarreg` ;
+- clone ou actualise le dépôt dans `/opt/harz_truck_planner` ;
+- conserve un éventuel fichier de configuration existant ;
+- construit et démarre Companion sur le port `8080` ;
+- vérifie le point de santé ;
+- crée l'icône du bureau et l'autostart de la session graphique.
+
+La construction Electron est optionnelle, car elle nécessite au moins 6 Gio libres :
+
+```bash
+sudo bash /opt/harz_truck_planner/deployment/raspberry-pi/install-harzos.sh \
+  --user harzkarreg --with-electron
+```
+
+Pour installer le service web sans ouverture automatique à la connexion :
+
+```bash
+sudo bash /opt/harz_truck_planner/deployment/raspberry-pi/install-harzos.sh \
+  --user harzkarreg --no-autostart
+```
+
+Le script ne supprime ni les données persistantes ni une configuration existante. Un dépôt existant avec des changements incompatibles n'est pas réinitialisé de force.
+
 ## Lancement depuis les sources
 
 ```bash
