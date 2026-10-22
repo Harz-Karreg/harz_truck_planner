@@ -1,0 +1,33 @@
+name: harzkarreg
+
+services:
+  companion-web:
+    build:
+      context: ../..
+      dockerfile: deployment/raspberry-pi/Dockerfile.companion
+    image: harzkarreg/companion-web:${HK_VERSION:-local}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    ports:
+      - "${HK_BIND_ADDRESS:-0.0.0.0}:${HK_PUBLIC_PORT:-8080}:8080"
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+      - /var/cache/nginx:size=16m,mode=0755
+      - /var/run:size=1m,mode=0755
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    driver: bridge

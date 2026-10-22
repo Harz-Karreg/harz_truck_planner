@@ -7,6 +7,9 @@ const INITIAL_CHECK_DELAY_MS = 10 * 1000;
 let currentCheck = null;
 
 async function checkForUpdates() {
+  if (process.platform !== "win32") {
+    return { status: "unsupported-platform", currentVersion: app.getVersion() };
+  }
   if (!app.isPackaged) {
     return { status: "development", currentVersion: app.getVersion() };
   }
@@ -32,6 +35,11 @@ async function checkForUpdates() {
 function setupAutoUpdates(getMainWindow) {
   ipcMain.removeHandler("updates:check");
   ipcMain.handle("updates:check", () => checkForUpdates());
+
+  if (process.platform !== "win32") {
+    console.info("Mises a jour automatiques gerees separement sur cette plateforme.");
+    return;
+  }
 
   if (!app.isPackaged) {
     console.info("Mises a jour automatiques desactivees en mode developpement.");

@@ -9,10 +9,12 @@
   "scripts": {
     "dev": "electron .",
     "start": "electron .",
+    "start:companion": "electron . --companion",
     "test": "node --test",
     "check": "node scripts/check-js.js",
     "pack:win": "electron-builder --win --dir",
     "dist:win": "electron-builder --win nsis",
+    "dist:pi": "electron-builder --linux deb --arm64",
     "release:win": "electron-builder --win nsis --publish always"
   },
   "dependencies": {
@@ -55,6 +57,26 @@
         }
       ],
       "artifactName": "HARZ-KARREG-${version}-Setup.${ext}"
+    },
+    "linux": {
+      "maintainer": "HARZ KARREG",
+      "target": [
+        {
+          "target": "deb",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Office",
+      "executableName": "harz-karreg",
+      "artifactName": "HARZ-KARREG-${version}-linux-${arch}.${ext}",
+      "desktop": {
+        "entry": {
+          "Name": "HARZ KARREG",
+          "Comment": "Planning transport HARZ KARREG"
+        }
+      }
     },
     "nsis": {
       "oneClick": false,

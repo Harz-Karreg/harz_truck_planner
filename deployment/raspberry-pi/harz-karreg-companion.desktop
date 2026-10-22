@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=HARZ KARREG Companion
+Comment=Planning hebdomadaire HARZ KARREG en mode kiosque
+Exec="/opt/HARZ KARREG/harz-karreg" --companion
+Terminal=false
+X-GNOME-Autostart-enabled=true

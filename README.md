@@ -25,6 +25,14 @@ npm install
 npm start
 ```
 
+Pour ouvrir directement COMPANION :
+
+```powershell
+npm start -- --companion
+```
+
+Sous Linux, ce lancement active le mode kiosque destiné au Raspberry Pi. Le lancement normal continue d'afficher le sélecteur des trois modes.
+
 La fenetre de demarrage propose trois interfaces :
 
 - ADMIN ouvre l'application de gestion existante ;
@@ -71,6 +79,25 @@ npm run dist:win
 
 Les fichiers generes sont places dans `dist/`. Les versions de developpement ne sont pas signees. La signature de production sera activee lorsqu'un certificat sera disponible.
 
+## Packaging Raspberry Pi 5
+
+La cible Raspberry Pi OS 64 bits produit un paquet Debian ARM64 :
+
+```powershell
+npm run dist:pi
+```
+
+Les instructions de déploiement, d'autostart et les vérifications matérielles sont décrites dans [docs/raspberry-pi-companion.md](docs/raspberry-pi-companion.md).
+
+Un déploiement Docker/Nginx permet également d'ouvrir COMPANION depuis le réseau local sur le port `8080` :
+
+```bash
+docker compose --env-file /opt/harzkarreg/config/harzkarreg.env \
+  -f deployment/raspberry-pi/compose.yaml up -d --build
+```
+
+Cette première exposition web reste basée sur le stockage local du navigateur. Le partage effectif des publications entre ADMIN et COMPANION nécessitera l'API Rust prévue dans la phase suivante.
+
 ## Mises a jour automatiques
 
 Les installations Windows verifient automatiquement les nouvelles versions publiees dans le depot public [`Harz-Karreg/harz_truck_planner-releases`](https://github.com/Harz-Karreg/harz_truck_planner-releases). Le code source reste dans ce depot prive et aucun token GitHub n'est integre a l'application.
@@ -102,3 +129,5 @@ Ces contraintes decrivent le MVP actuel. Pendant la migration, les ecrans et don
 
 - [Audit et architecture cible](docs/architecture-electron.md)
 - [Plan de migration incremental](docs/migration-plan.md)
+- [Architecture cible Rust et Raspberry Pi](docs/architecture-rust-raspberry-pi.md)
+- [Déploiement COMPANION sur Raspberry Pi 5](docs/raspberry-pi-companion.md)

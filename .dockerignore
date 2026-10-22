@@ -1,0 +1,11 @@
+.git
+.github
+.vscode
+node_modules
+dist
+build
+tests
+docs
+TECHNICAL_CONTEXT.md
+*.log
+.env

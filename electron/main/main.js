@@ -5,9 +5,22 @@ const { setupAutoUpdates } = require("./updater");
 
 const applicationRoot = path.resolve(__dirname, "..", "..");
 const startupPage = path.join(applicationRoot, "src", "renderer", "startup", "index.html");
+const companionPage = path.join(applicationRoot, "src", "renderer", "companion", "index.html");
 const preloadScript = path.join(applicationRoot, "electron", "preload", "index.js");
 
 let mainWindow = null;
+
+function hasCommandLineFlag(flag) {
+  return process.argv.includes(flag);
+}
+
+function resolveLaunchMode() {
+  return hasCommandLineFlag("--companion") ? "companion" : "startup";
+}
+
+function shouldUseKiosk(mode) {
+  return mode === "companion" && (process.platform === "linux" || hasCommandLineFlag("--kiosk"));
+}
 
 function isInsideApplication(targetPath) {
   const relative = path.relative(applicationRoot, targetPath);
@@ -24,6 +37,9 @@ function isAllowedNavigation(targetUrl) {
 }
 
 function createMainWindow() {
+  const launchMode = resolveLaunchMode();
+  const kiosk = shouldUseKiosk(launchMode);
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -33,6 +49,8 @@ function createMainWindow() {
     show: false,
     autoHideMenuBar: true,
     title: "HARZ KARREG",
+    kiosk,
+    fullscreen: kiosk,
     webPreferences: {
       preload: preloadScript,
       contextIsolation: true,
@@ -53,7 +71,7 @@ function createMainWindow() {
     mainWindow = null;
   });
 
-  mainWindow.loadFile(startupPage);
+  mainWindow.loadFile(launchMode === "companion" ? companionPage : startupPage);
 }
 
 const hasApplicationLock = app.requestSingleInstanceLock();

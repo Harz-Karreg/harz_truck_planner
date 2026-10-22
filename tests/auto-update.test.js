@@ -20,6 +20,7 @@ test("les builds utilisent le dépôt public de mises à jour", () => {
 });
 
 test("les mises à jour sont désactivées en développement et proposées après téléchargement", () => {
+  assert.match(updater, /process\.platform !== "win32"/);
   assert.match(updater, /if \(!app\.isPackaged\)/);
   assert.match(updater, /autoUpdater\.autoDownload = true/);
   assert.match(updater, /update-downloaded/);

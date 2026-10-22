@@ -15,6 +15,17 @@ test("les scripts Electron et le packaging Windows sont configures", () => {
   assert.equal(packageJson.build.win.target[0].target, "nsis");
 });
 
+test("le lancement direct Companion et le packaging Raspberry Pi sont configures", () => {
+  assert.equal(packageJson.scripts["start:companion"], "electron . --companion");
+  assert.match(packageJson.scripts["dist:pi"], /electron-builder --linux deb --arm64/);
+  assert.equal(packageJson.build.linux.target[0].target, "deb");
+  assert.deepEqual(packageJson.build.linux.target[0].arch, ["arm64"]);
+  assert.equal(packageJson.build.linux.maintainer, "HARZ KARREG");
+  assert.match(mainSource, /process\.argv\.includes\(flag\)/);
+  assert.match(mainSource, /launchMode === "companion" \? companionPage : startupPage/);
+  assert.match(mainSource, /process\.platform === "linux" \|\| hasCommandLineFlag\("--kiosk"\)/);
+});
+
 test("la fenetre Electron isole le renderer", () => {
   assert.match(mainSource, /contextIsolation:\s*true/);
   assert.match(mainSource, /nodeIntegration:\s*false/);
